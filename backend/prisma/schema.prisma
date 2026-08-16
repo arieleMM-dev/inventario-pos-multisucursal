@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CAJERO
+  ENCARGADO
+  ADMIN
+}
+
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
+}
+
+enum MovementType {
+  VENTA
+  INGRESO
+  TRANSFERENCIA_SALIDA
+  TRANSFERENCIA_ENTRADA
+  AJUSTE
+}
+
+model Branch {
+  id      String  @id @default(uuid())
+  name    String
+  address String?
+
+  users          User[]
+  stocks         BranchStock[]
+  movements      StockMovement[]
+  sales          Sale[]
+  transfersOut   StockTransfer[] @relation("OriginBranch")
+  transfersIn    StockTransfer[] @relation("DestinationBranch")
+  purchaseOrders PurchaseOrder[]
+  cashSessions   CashSession[]
+}
+
+model User {
+  id           String @id @default(uuid())
+  email        String @unique
+  passwordHash String
+  name         String
+  role         Role
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  movements        StockMovement[]
+  sales            Sale[]
+  transfersCreated StockTransfer[]
+  cashSessions     CashSession[]
+}
+
+model CashSession {
+  id          String            @id @default(uuid())
+  branchId    String
+  cashierId   String
+  startTime   DateTime          @default(now())
+  endTime     DateTime?
+  initialFund Float             @default(0)
+  finalFund   Float?
+  status      CashSessionStatus @default(OPEN)
+
+  branch  Branch @relation(fields: [branchId], references: [id])
+  cashier User   @relation(fields: [cashierId], references: [id])
+  sales   Sale[]
+}
+
+model Client {
+  id       String  @id @default(uuid())
+  name     String
+  email    String?
+  document String? @unique
+  sales    Sale[]
+}
+
+model Product {
+  id       String @id @default(uuid())
+  sku      String @unique
+  name     String
+  category String
+  price    Float
+  minStock Int
+
+  stocks        BranchStock[]
+  movements     StockMovement[]
+  saleItems     SaleItem[]
+  transfers     StockTransfer[]
+  purchaseItems PurchaseOrderItem[]
+}
+
+model BranchStock {
+  id        String @id @default(uuid())
+  productId String
+  branchId  String
+  quantity  Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@unique([productId, branchId])
+}
+
+model StockMovement {
+  id            String       @id @default(uuid())
+  productId     String
+  branchId      String
+  type          MovementType
+  quantity      Int
+  previousStock Int?
+  newStock      Int?
+  referenceId   String?
+  createdById   String
+  createdAt     DateTime     @default(now())
+
+  product   Product @relation(fields: [productId], references: [id])
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  createdBy User    @relation(fields: [createdById], references: [id])
+}
+
+model Sale {
+  id        String   @id @default(uuid())
+  branchId  String
+  cashierId String
+  total     Float
+  createdAt DateTime @default(now())
+
+  cashSessionId String?
+  clientId      String?
+  paymentMethod PaymentMethod @default(EFECTIVO)
+  paymentAmount Float?
+
+  branch      Branch       @relation(fields: [branchId], references: [id])
+  cashier     User         @relation(fields: [cashierId], references: [id])
+  cashSession CashSession? @relation(fields: [cashSessionId], references: [id])
+  client      Client?      @relation(fields: [clientId], references: [id])
+  items       SaleItem[]
+}
+
+model SaleItem {
+  id        String @id @default(uuid())
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+enum TransferStatus {
+  PENDIENTE
+  EN_TRANSITO
+  RECIBIDO
+  CANCELADO
+}
+
+model StockTransfer {
+  id                  String         @id @default(uuid())
+  productId           String
+  originBranchId      String
+  destinationBranchId String
+  quantity            Int
+  status              TransferStatus @default(PENDIENTE)
+  createdById         String
+  createdAt           DateTime       @default(now())
+  receivedAt          DateTime?
+
+  product           Product @relation(fields: [productId], references: [id])
+  originBranch      Branch  @relation("OriginBranch", fields: [originBranchId], references: [id])
+  destinationBranch Branch  @relation("DestinationBranch", fields: [destinationBranchId], references: [id])
+  createdBy         User    @relation(fields: [createdById], references: [id])
+}
+
+model Supplier {
+  id      String          @id @default(uuid())
+  name    String
+  contact String?
+  orders  PurchaseOrder[]
+}
+
+enum PurchaseOrderStatus {
+  PENDIENTE
+  RECIBIDO
+  CANCELADO
+}
+
+model PurchaseOrder {
+  id         String              @id @default(uuid())
+  supplierId String
+  branchId   String
+  status     PurchaseOrderStatus @default(PENDIENTE)
+  createdAt  DateTime            @default(now())
+
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  branch   Branch              @relation(fields: [branchId], references: [id])
+  items    PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id              String @id @default(uuid())
+  purchaseOrderId String
+  productId       String
+  quantity        Int
+  unitCost        Float
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
+}
