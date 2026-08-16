@@ -15,23 +15,16 @@ const formSchema = z.object({
   name: z.string().min(1, "Nombre es requerido"),
   email: z.string().email("Correo inválido"),
   password: z.string().optional(),
-  role: z.enum(['CAJERO', 'ENCARGADO', 'ADMIN']),
+  roleId: z.string().uuid("Rol es requerido"),
   branchId: z.string().optional().nullable()
-}).refine(data => {
-  if ((data.role === 'CAJERO' || data.role === 'ENCARGADO') && !data.branchId) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Los CAJEROS y ENCARGADOS deben tener una sucursal asignada",
-  path: ["branchId"]
 });
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
+  roleId: string;
+  roleName: string;
   branchId?: string | null;
 }
 
@@ -53,18 +46,27 @@ export function UserFormModal({ user, trigger }: UserFormModalProps) {
     }
   });
 
+  const { data: roles } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const res = await api.get('/roles');
+      return res.data.data;
+    }
+  });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       name: user?.name || "",
       email: user?.email || "",
-      role: (user?.role as any) || "CAJERO",
+      roleId: user?.roleId || "",
       branchId: user?.branchId || "",
     },
   });
 
-  const role = form.watch("role");
-  const showBranchSelect = role === "CAJERO" || role === "ENCARGADO";
+  const selectedRoleId = form.watch("roleId");
+  const selectedRoleName = roles?.find((r: any) => r.id === selectedRoleId)?.name;
+  const showBranchSelect = selectedRoleName !== "ADMIN";
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setError(null);
@@ -94,14 +96,16 @@ export function UserFormModal({ user, trigger }: UserFormModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <button className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-            <Plus className="w-4 h-4" />
-            Nuevo Usuario
-          </button>
-        )}
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          (trigger as React.ReactElement) || (
+            <button className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+              <Plus className="w-4 h-4" />
+              Nuevo Usuario
+            </button>
+          )
+        }
+      />
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{user ? "Editar Usuario" : "Crear Nuevo Usuario"}</DialogTitle>
@@ -152,7 +156,7 @@ export function UserFormModal({ user, trigger }: UserFormModalProps) {
             
             <FormField
               control={form.control}
-              name="role"
+              name="roleId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Rol</FormLabel>
@@ -161,9 +165,10 @@ export function UserFormModal({ user, trigger }: UserFormModalProps) {
                       {...field} 
                       className="flex h-10 w-full items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <option value="CAJERO">CAJERO</option>
-                      <option value="ENCARGADO">ENCARGADO</option>
-                      <option value="ADMIN">ADMIN</option>
+                      <option value="">Seleccione un rol...</option>
+                      {roles?.map((r: any) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
                     </select>
                   </FormControl>
                   <FormMessage />

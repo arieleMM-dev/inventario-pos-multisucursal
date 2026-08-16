@@ -8,6 +8,7 @@ interface User {
   email: string;
   name: string;
   role: string;
+  permissions: string[];
   branchId: string | null;
 }
 
@@ -19,6 +20,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   isInitializing: boolean;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,8 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
+  const hasPermission = (permission: string) => {
+    if (!user) return false;
+    if (user.role === 'ADMIN') return true;
+    return user.permissions?.includes(permission) || false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, selectedBranchId, setSelectedBranchId, login, logout, isInitializing }}>
+    <AuthContext.Provider value={{ user, token, selectedBranchId, setSelectedBranchId, login, logout, isInitializing, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

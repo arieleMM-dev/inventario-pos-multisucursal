@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createTransfer, updateTransferStatus, getTransfers } from '../controllers/transfer.controller';
-import { requireAuth, requireRole } from '../middlewares/auth.middleware';
+import { requireAuth, requirePermission } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -9,7 +9,7 @@ const router = Router();
 // por tanto requireRole filtra para excluir a CAJERO.
 
 router.get('/', requireAuth, getTransfers);
-router.post('/', requireAuth, requireRole(['ENCARGADO', 'ADMIN']), createTransfer);
-router.patch('/:id/status', requireAuth, requireRole(['ENCARGADO', 'ADMIN']), updateTransferStatus);
+router.post('/', requireAuth, requirePermission('transfers.create'), createTransfer);
+router.patch('/:id/status', requireAuth, requirePermission('transfers.receive'), updateTransferStatus);
 
 export default router;

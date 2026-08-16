@@ -1,38 +1,32 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
 import { sendSuccess, sendError } from '../utils/response';
-import bcrypt from 'bcrypt';
+import * as argon2 from 'argon2';
 import { z } from 'zod';
 
 const userSchema = z.object({
   name: z.string().min(1, "Nombre es requerido"),
   email: z.string().email("Correo inválido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").optional(),
-  role: z.enum(['CAJERO', 'ENCARGADO', 'ADMIN']),
+  roleId: z.string().uuid("Rol inválido"),
   branchId: z.string().uuid("Sucursal inválida").optional().nullable()
-}).refine(data => {
-  if ((data.role === 'CAJERO' || data.role === 'ENCARGADO') && !data.branchId) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Los CAJEROS y ENCARGADOS deben tener una sucursal asignada",
-  path: ["branchId"]
 });
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
+      include: {
         role: true,
-        branchId: true,
         branch: { select: { name: true } }
       }
     });
-    return sendSuccess(res, users);
+    
+    // Flatten role name para el frontend
+    const formatted = users.map(u => ({
+      ...u,
+      roleName: u.role.name
+    }));
+    return sendSuccess(res, formatted);
   } catch (error) {
     console.error('Error getUsers:', error);
     return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al obtener usuarios', 500);
@@ -51,16 +45,16 @@ export const createUser = async (req: Request, res: Response) => {
     const existing = await prisma.user.findUnique({ where: { email: result.data.email } });
     if (existing) return sendError(res, 'CONFLICT', 'El correo ya está registrado', 409);
 
-    const hash = await bcrypt.hash(result.data.password, 10);
+    const hash = await argon2.hash(result.data.password);
     const user = await prisma.user.create({
       data: {
         name: result.data.name,
         email: result.data.email,
         passwordHash: hash,
-        role: result.data.role,
-        branchId: result.data.role === 'ADMIN' ? null : result.data.branchId
+        roleId: result.data.roleId,
+        branchId: result.data.branchId
       },
-      select: { id: true, name: true, email: true, role: true, branchId: true }
+      include: { role: true, branch: { select: { name: true } } }
     });
 
     return sendSuccess(res, user, 201);
@@ -72,7 +66,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const result = userSchema.safeParse(req.body);
     if (!result.success) return sendError(res, 'VALIDATION_ERROR', 'Datos inválidos', 400, result.error.issues);
     
@@ -85,18 +79,18 @@ export const updateUser = async (req: Request, res: Response) => {
     const dataToUpdate: any = {
       name: result.data.name,
       email: result.data.email,
-      role: result.data.role,
-      branchId: result.data.role === 'ADMIN' ? null : result.data.branchId
+      roleId: result.data.roleId,
+      branchId: result.data.branchId
     };
 
     if (result.data.password) {
-      dataToUpdate.passwordHash = await bcrypt.hash(result.data.password, 10);
+      dataToUpdate.passwordHash = await argon2.hash(result.data.password);
     }
 
     const user = await prisma.user.update({
       where: { id },
       data: dataToUpdate,
-      select: { id: true, name: true, email: true, role: true, branchId: true }
+      include: { role: true, branch: { select: { name: true } } }
     });
 
     return sendSuccess(res, user);

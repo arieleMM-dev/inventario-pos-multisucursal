@@ -10,6 +10,7 @@ import branchRoutes from './routes/branch.routes';
 import userRoutes from './routes/user.routes';
 import clientRoutes from './routes/client.routes';
 import cashRoutes from './routes/cash.routes';
+import roleRoutes from './routes/role.routes';
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/sales', saleRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/purchase-orders', purchaseRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Manejador de rutas no encontradas
 app.use((req, res) => {

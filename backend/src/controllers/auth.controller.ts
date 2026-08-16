@@ -19,6 +19,15 @@ export const login = async (req: Request, res: Response) => {
     // 2. Buscar al usuario en la base de datos
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: { permission: true }
+            }
+          }
+        }
+      }
     });
 
     if (!user) {
@@ -33,9 +42,11 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // 4. Generar el token JWT
+    const permissions = user.role.permissions.map(rp => rp.permission.code);
     const payload = {
       userId: user.id,
-      role: user.role,
+      role: user.role.name,
+      permissions,
       branchId: user.branchId,
     };
 
@@ -51,7 +62,8 @@ export const login = async (req: Request, res: Response) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role.name,
+        permissions,
         branchId: user.branchId,
       }
     });

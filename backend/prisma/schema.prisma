@@ -6,12 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  CAJERO
-  ENCARGADO
-  ADMIN
-}
-
 enum CashSessionStatus {
   OPEN
   CLOSED
@@ -46,12 +40,42 @@ model Branch {
   cashSessions   CashSession[]
 }
 
+model Permission {
+  id          String @id @default(uuid())
+  code        String @unique
+  module      String
+  description String
+  roles       RolePermission[]
+}
+
+model Role {
+  id          String @id @default(uuid())
+  name        String @unique
+  description String?
+  isSystem    Boolean @default(false)
+  
+  permissions RolePermission[]
+  users       User[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
 model User {
   id           String @id @default(uuid())
   email        String @unique
   passwordHash String
   name         String
-  role         Role
+  
+  roleId       String
+  role         Role   @relation(fields: [roleId], references: [id])
 
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])

@@ -1,97 +1,114 @@
 import { prisma } from '../src/utils/prisma';
 import * as argon2 from 'argon2';
 
+const permissions = [
+  // POS
+  { code: 'pos.sell', module: 'Punto de Venta', description: 'Realizar ventas y cobrar' },
+  // INVENTORY
+  { code: 'inventory.view', module: 'Inventario', description: 'Ver catálogo y stock' },
+  { code: 'inventory.create_product', module: 'Inventario', description: 'Crear o editar productos' },
+  { code: 'inventory.adjust', module: 'Inventario', description: 'Realizar ajustes manuales de stock' },
+  // TRANSFERS
+  { code: 'transfers.view', module: 'Transferencias', description: 'Ver transferencias' },
+  { code: 'transfers.create', module: 'Transferencias', description: 'Enviar transferencias' },
+  { code: 'transfers.receive', module: 'Transferencias', description: 'Recibir transferencias' },
+  // REPORTS
+  { code: 'reports.view', module: 'Reportes', description: 'Ver analíticas y métricas' },
+  // CONFIG
+  { code: 'users.manage', module: 'Configuración', description: 'Crear y editar usuarios' },
+  { code: 'branches.manage', module: 'Configuración', description: 'Crear y editar sucursales' },
+  { code: 'roles.manage', module: 'Configuración', description: 'Crear y editar roles/permisos' },
+];
+
 async function main() {
-  console.log('Seeding database...');
+  console.log('Iniciando el proceso de seed de RBAC...');
 
-  // Limpiar datos
-  await prisma.saleItem.deleteMany();
-  await prisma.sale.deleteMany();
-  await prisma.stockTransfer.deleteMany();
-  await prisma.stockMovement.deleteMany();
-  await prisma.branchStock.deleteMany();
-  await prisma.purchaseOrderItem.deleteMany();
-  await prisma.purchaseOrder.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.branch.deleteMany();
-
-  // 1. Crear Sucursales
-  const branchCentro = await prisma.branch.create({
-    data: { name: 'Centro', address: 'Av. Principal 123' },
-  });
-  const branchNorte = await prisma.branch.create({
-    data: { name: 'Norte', address: 'Plaza Norte 456' },
-  });
-
-  console.log(`Sucursales creadas: ${branchCentro.name}, ${branchNorte.name}`);
-
-  // 2. Crear Usuarios (ADMIN, ENCARGADO, CAJERO)
-  const passwordHash = await argon2.hash('123456');
-
-  const admin = await prisma.user.create({
-    data: {
-      name: 'Admin General',
-      email: 'admin@test.com',
-      passwordHash,
-      role: 'ADMIN',
+  // 1. Crear Sucursal Matriz
+  const sucursalMatriz = await prisma.branch.upsert({
+    where: { id: 'matriz-001' },
+    update: {},
+    create: {
+      id: 'matriz-001',
+      name: 'Sucursal Matriz',
+      address: 'Dirección Principal, Centro',
     },
   });
+  console.log(`✅ Sucursal creada: ${sucursalMatriz.name}`);
 
-  const encargado = await prisma.user.create({
-    data: {
-      name: 'Encargado Centro',
-      email: 'encargado@test.com',
-      passwordHash,
-      role: 'ENCARGADO',
-      branchId: branchCentro.id,
+  // 2. Crear Permisos Base
+  console.log('Creando permisos de sistema...');
+  for (const p of permissions) {
+    await prisma.permission.upsert({
+      where: { code: p.code },
+      update: { description: p.description, module: p.module },
+      create: p,
+    });
+  }
+
+  // 3. Crear Roles Base
+  const allPermissions = await prisma.permission.findMany();
+
+  // Admin: Todos los permisos
+  const adminRole = await prisma.role.upsert({
+    where: { name: 'ADMIN' },
+    update: {},
+    create: {
+      name: 'ADMIN',
+      description: 'Administrador general del sistema',
+      isSystem: true,
+      permissions: {
+        create: allPermissions.map(p => ({ permissionId: p.id }))
+      }
+    }
+  });
+
+  // Encargado: Casi todos excepto gestión de usuarios y roles
+  const encargadoPermissions = allPermissions.filter(p => p.module !== 'Configuración');
+  await prisma.role.upsert({
+    where: { name: 'ENCARGADO' },
+    update: {},
+    create: {
+      name: 'ENCARGADO',
+      description: 'Gerente de sucursal',
+      isSystem: true,
+      permissions: {
+        create: encargadoPermissions.map(p => ({ permissionId: p.id }))
+      }
+    }
+  });
+
+  // Cajero: Solo ventas e inventario (ver)
+  const cajeroPermissions = allPermissions.filter(p => ['pos.sell', 'inventory.view'].includes(p.code));
+  await prisma.role.upsert({
+    where: { name: 'CAJERO' },
+    update: {},
+    create: {
+      name: 'CAJERO',
+      description: 'Atención en punto de venta',
+      isSystem: true,
+      permissions: {
+        create: cajeroPermissions.map(p => ({ permissionId: p.id }))
+      }
+    }
+  });
+  console.log('✅ Roles y permisos creados');
+
+  // 4. Crear Usuario Super Administrador
+  const adminPassword = await argon2.hash('admin123');
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@empresa.com' },
+    update: { roleId: adminRole.id },
+    create: {
+      email: 'admin@empresa.com',
+      passwordHash: adminPassword,
+      name: 'Administrador General',
+      roleId: adminRole.id,
+      branchId: null,
     },
   });
+  console.log(`✅ Usuario Admin creado: ${adminUser.email} / admin123`);
 
-  const cajero = await prisma.user.create({
-    data: {
-      name: 'Cajero Centro',
-      email: 'cajero@test.com',
-      passwordHash,
-      role: 'CAJERO',
-      branchId: branchCentro.id,
-    },
-  });
-
-  console.log(`Usuarios creados:`);
-  console.log(`- ADMIN: ${admin.email} (pass: 123456)`);
-  console.log(`- ENCARGADO: ${encargado.email} (pass: 123456) [Sucursal: Centro]`);
-  console.log(`- CAJERO: ${cajero.email} (pass: 123456) [Sucursal: Centro]`);
-
-  // 3. Crear Productos y Stock inicial
-  const p1 = await prisma.product.create({
-    data: { sku: 'P-001', name: 'Refresco Cola 600ml', category: 'Bebidas', price: 15.5, minStock: 10 }
-  });
-  const p2 = await prisma.product.create({
-    data: { sku: 'P-002', name: 'Papas Fritas Clásicas', category: 'Snacks', price: 20.0, minStock: 15 }
-  });
-  const p3 = await prisma.product.create({
-    data: { sku: 'P-003', name: 'Agua Mineral 1L', category: 'Bebidas', price: 12.0, minStock: 5 }
-  });
-
-  // Stock para Centro
-  await prisma.branchStock.createMany({
-    data: [
-      { productId: p1.id, branchId: branchCentro.id, quantity: 50 },
-      { productId: p2.id, branchId: branchCentro.id, quantity: 12 }, // Stock Bajo (min 15)
-      { productId: p3.id, branchId: branchCentro.id, quantity: 0 },  // Agotado
-    ]
-  });
-
-  // Stock para Norte
-  await prisma.branchStock.createMany({
-    data: [
-      { productId: p1.id, branchId: branchNorte.id, quantity: 100 },
-      { productId: p2.id, branchId: branchNorte.id, quantity: 80 },
-    ]
-  });
-
-  console.log('Productos y Stock inicial creados con éxito.');
+  console.log('Seed RBAC completado.');
 }
 
 main()

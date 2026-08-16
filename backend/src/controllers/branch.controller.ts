@@ -37,7 +37,7 @@ export const createBranch = async (req: Request, res: Response) => {
 
 export const updateBranch = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const result = branchSchema.safeParse(req.body);
     if (!result.success) return sendError(res, 'VALIDATION_ERROR', 'Datos inválidos', 400, result.error.issues);
     

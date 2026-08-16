@@ -5,7 +5,8 @@ import { Role } from '@prisma/client';
 
 export interface JwtPayload {
   userId: string;
-  role: Role;
+  role: string;
+  permissions: string[];
   branchId: string | null;
 }
 
@@ -34,14 +35,18 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export function requireRole(allowedRoles: Role[]) {
+export function requirePermission(requiredPermission: string) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return sendError(res, 'UNAUTHORIZED', 'Usuario no autenticado', 401);
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
-      return sendError(res, 'FORBIDDEN', 'No tienes permisos suficientes para realizar esta acción', 403);
+    if (req.user.role === 'ADMIN') {
+      return next(); // ADMIN bypass
+    }
+
+    if (!req.user.permissions.includes(requiredPermission)) {
+      return sendError(res, 'FORBIDDEN', `Falta el permiso: ${requiredPermission}`, 403);
     }
     next();
   };

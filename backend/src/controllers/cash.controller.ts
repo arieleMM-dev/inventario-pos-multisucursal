@@ -66,7 +66,7 @@ export const openSession = async (req: Request, res: Response) => {
 
 export const closeSession = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const branchId = req.user!.branchId;
     const userId = req.user!.userId;
 

@@ -23,8 +23,13 @@ describe('Motor de Ventas: Control de Concurrencia Optimista', () => {
         name: 'Cajero Test',
         email: `cajero_${Date.now()}@test.com`,
         passwordHash: 'dummy_hash', 
-        role: 'CAJERO',
-        branchId: testBranchId
+        role: {
+          connectOrCreate: {
+            where: { name: 'CAJERO' },
+            create: { name: 'CAJERO', description: 'Cajero test' }
+          }
+        },
+        branch: { connect: { id: testBranchId } }
       }
     });
     testUserId = user.id;

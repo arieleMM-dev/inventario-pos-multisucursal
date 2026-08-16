@@ -58,14 +58,16 @@ export function BranchFormModal({ branch, trigger }: BranchFormModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <button className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-            <Plus className="w-4 h-4" />
-            Nueva Sucursal
-          </button>
-        )}
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          (trigger as React.ReactElement) || (
+            <button className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+              <Plus className="w-4 h-4" />
+              Nueva Sucursal
+            </button>
+          )
+        }
+      />
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{branch ? "Editar Sucursal" : "Crear Nueva Sucursal"}</DialogTitle>

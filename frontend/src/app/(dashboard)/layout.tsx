@@ -1,8 +1,9 @@
 "use client";
 
-import { PackageSearch, Settings, LayoutDashboard, ArrowRightLeft, FileBarChart, LogOut } from "lucide-react";
+import { PackageSearch, Settings, LayoutDashboard, ArrowRightLeft, FileBarChart, LogOut, Settings2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -13,7 +14,7 @@ interface Branch {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, token, logout, isInitializing, selectedBranchId, setSelectedBranchId } = useAuth();
+  const { user, token, logout, isInitializing, selectedBranchId, setSelectedBranchId, hasPermission } = useAuth();
   const router = useRouter();
 
   // Fetch de sucursales para el selector (solo si está autenticado)
@@ -47,18 +48,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </span>
         </div>
         <nav className="flex-1 py-4 px-3 space-y-1">
-          <a href="#" className="flex items-center gap-3 px-3 py-2 text-brand-500 bg-brand-50 rounded-md font-medium">
-            <LayoutDashboard className="w-5 h-5" />
-            Inventario
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md font-medium transition-colors">
-            <ArrowRightLeft className="w-5 h-5" />
-            Transferencias
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md font-medium transition-colors">
-            <FileBarChart className="w-5 h-5" />
-            Reportes
-          </a>
+          {hasPermission('inventory.view') && (
+            <Link href="/" className="flex items-center gap-3 px-3 py-2 text-brand-500 bg-brand-50 rounded-md font-medium">
+              <LayoutDashboard className="w-5 h-5" />
+              Inventario
+            </Link>
+          )}
+          {hasPermission('transfers.view') && (
+            <Link href="/transfers" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md font-medium transition-colors">
+              <ArrowRightLeft className="w-5 h-5" />
+              Transferencias
+            </Link>
+          )}
+          {hasPermission('reports.view') && (
+            <Link href="/reports" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md font-medium transition-colors">
+              <FileBarChart className="w-5 h-5" />
+              Reportes
+            </Link>
+          )}
+          {(hasPermission('users.manage') || hasPermission('branches.manage') || hasPermission('roles.manage')) && (
+            <Link href="/configuracion" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md font-medium transition-colors">
+              <Settings2 className="w-5 h-5" />
+              Configuración
+            </Link>
+          )}
         </nav>
         <div className="p-4 border-t border-gray-200 space-y-1">
           <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-50 rounded-md font-medium transition-colors">
