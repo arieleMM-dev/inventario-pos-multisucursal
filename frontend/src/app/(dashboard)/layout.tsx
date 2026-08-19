@@ -2,8 +2,10 @@
 
 import { PackageSearch, Settings, LayoutDashboard, ArrowRightLeft, FileBarChart, LogOut, Settings2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from "@/components/ui/dropdown-menu";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +18,7 @@ interface Branch {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, token, logout, isInitializing, selectedBranchId, setSelectedBranchId, hasPermission } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   // Fetch de sucursales para el selector (solo si está autenticado)
   const { data: branches } = useQuery<Branch[]>({
@@ -49,25 +52,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <nav className="flex-1 py-4 px-3 space-y-1">
           {hasPermission('inventory.view') && (
-            <Link href="/" className="flex items-center gap-3 px-3 py-2 text-brand-500 bg-brand-50 rounded-md font-medium">
+            <Link href="/" className={cn("flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors", pathname === '/' ? "text-brand-500 bg-brand-50" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
               <LayoutDashboard className="w-5 h-5" />
               Inventario
             </Link>
           )}
           {hasPermission('transfers.view') && (
-            <Link href="/transfers" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md font-medium transition-colors">
+            <Link href="/transfers" className={cn("flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors", pathname === '/transfers' ? "text-brand-500 bg-brand-50" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
               <ArrowRightLeft className="w-5 h-5" />
               Transferencias
             </Link>
           )}
           {hasPermission('reports.view') && (
-            <Link href="/reports" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md font-medium transition-colors">
+            <Link href="/reports" className={cn("flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors", pathname === '/reports' ? "text-brand-500 bg-brand-50" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
               <FileBarChart className="w-5 h-5" />
               Reportes
             </Link>
           )}
           {(hasPermission('users.manage') || hasPermission('branches.manage') || hasPermission('roles.manage')) && (
-            <Link href="/configuracion" className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md font-medium transition-colors">
+            <Link href="/configuracion" className={cn("flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors", pathname === '/configuracion' ? "text-brand-500 bg-brand-50" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
               <Settings2 className="w-5 h-5" />
               Configuración
             </Link>
@@ -91,10 +94,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-md focus:ring-brand-500 focus:border-brand-500 block p-2 outline-none"
               value={selectedBranchId}
               onChange={(e) => setSelectedBranchId(e.target.value)}
-              disabled={user?.role === 'ENCARGADO'} // Encargado no puede cambiar
+              disabled={!hasPermission('branches.manage_all')} // Si no tiene permiso global, no puede cambiar
             >
-              {user?.role === 'ENCARGADO' ? (
-                <option value={user.branchId || ""}>Mi Sucursal ({user.branchId})</option>
+              {!hasPermission('branches.manage_all') ? (
+                <option value={user?.branchId || ""}>Mi Sucursal ({user?.branchId})</option>
               ) : (
                 <>
                   <option value="" disabled>Seleccione...</option>
@@ -110,9 +113,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-2 text-sm text-gray-700 font-medium mr-4">
               {user?.name} ({user?.role})
             </div>
-            <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white font-medium text-sm uppercase">
-              {user?.name?.[0] || 'U'}
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white font-medium text-sm uppercase outline-none ring-2 ring-transparent focus:ring-brand-500/50 transition-all overflow-hidden cursor-pointer">
+                {user?.avatar ? (
+                   <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                   user?.name?.[0] || 'U'
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem render={<Link href="/profile" className="cursor-pointer w-full">Mi Perfil</Link>} />
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-red-600 cursor-pointer focus:text-red-600">
+                  Cerrar Sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 

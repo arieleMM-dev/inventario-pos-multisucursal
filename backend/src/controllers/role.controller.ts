@@ -12,6 +12,7 @@ const createRoleSchema = z.object({
 export const getRoles = async (req: Request, res: Response) => {
   try {
     const roles = await prisma.role.findMany({
+      where: { isActive: true },
       include: {
         permissions: {
           include: { permission: true }
@@ -95,5 +96,55 @@ export const updateRole = async (req: Request, res: Response) => {
     return sendSuccess(res, updated);
   } catch (error) {
     return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al actualizar rol', 500);
+  }
+};
+
+const assignUsersSchema = z.object({
+  userIds: z.array(z.string().uuid()),
+});
+
+export const assignUsersToRole = async (req: Request, res: Response) => {
+  try {
+    const roleId = req.params.id as string;
+    const result = assignUsersSchema.safeParse(req.body);
+    if (!result.success) return sendError(res, 'VALIDATION_ERROR', 'Datos inválidos', 400, result.error.issues);
+
+    const role = await prisma.role.findUnique({ where: { id: roleId } });
+    if (!role) return sendError(res, 'NOT_FOUND', 'Rol no encontrado', 404);
+
+    const { userIds } = result.data;
+
+    // Actualizar todos los usuarios para que tengan este rol
+    await prisma.user.updateMany({
+      where: {
+        id: { in: userIds }
+      },
+      data: {
+        roleId: roleId
+      }
+    });
+
+    return sendSuccess(res, { message: 'Usuarios asignados correctamente' });
+  } catch (error) {
+    console.error('Error assignUsersToRole:', error);
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al asignar usuarios', 500);
+  }
+};
+
+export const deleteRole = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const role = await prisma.role.findUnique({ where: { id } });
+    if (!role) return sendError(res, 'NOT_FOUND', 'Rol no encontrado', 404);
+    if (role.isSystem) return sendError(res, 'FORBIDDEN', 'No puedes eliminar roles de sistema', 403);
+
+    await prisma.role.update({
+      where: { id },
+      data: { isActive: false }
+    });
+    return sendSuccess(res, { message: 'Rol eliminado lógicamente' });
+  } catch (error) {
+    console.error('Error deleteRole:', error);
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al eliminar rol', 500);
   }
 };

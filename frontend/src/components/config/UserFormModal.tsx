@@ -15,7 +15,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Nombre es requerido"),
   email: z.string().email("Correo inválido"),
   password: z.string().optional(),
-  roleId: z.string().uuid("Rol es requerido"),
+  roleId: z.string().optional().nullable(),
   branchId: z.string().optional().nullable()
 });
 
@@ -65,14 +65,17 @@ export function UserFormModal({ user, trigger }: UserFormModalProps) {
   });
 
   const selectedRoleId = form.watch("roleId");
-  const selectedRoleName = roles?.find((r: any) => r.id === selectedRoleId)?.name;
-  const showBranchSelect = selectedRoleName !== "ADMIN";
+  const selectedRole = roles?.find((r: any) => r.id === selectedRoleId);
+  const showBranchSelect = !selectedRole?.isSystem;
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setError(null);
     try {
       const payload = { ...values };
-      if (!showBranchSelect) {
+      if (!payload.roleId) {
+        payload.roleId = null;
+      }
+      if (!showBranchSelect || !payload.roleId) {
         payload.branchId = null;
       }
       
@@ -114,84 +117,66 @@ export function UserFormModal({ user, trigger }: UserFormModalProps) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {error && <div className="text-danger-text text-sm bg-danger-bg p-2 rounded">{error}</div>}
             
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Juan Pérez" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Correo Electrónico</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="juan@ejemplo.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contraseña {user ? "(Dejar en blanco para mantener actual)" : ""}</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="******" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="roleId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rol</FormLabel>
-                  <FormControl>
-                    <select 
-                      {...field} 
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="">Seleccione un rol...</option>
-                      {roles?.map((r: any) => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {showBranchSelect && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900 border-b border-gray-100 pb-2">Datos Base</h3>
               <FormField
                 control={form.control}
-                name="branchId"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sucursal Asignada</FormLabel>
+                    <FormLabel>Nombre</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Juan Pérez" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Correo Electrónico</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="juan@ejemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña {user ? "(Dejar en blanco para mantener actual)" : ""}</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="******" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="space-y-4 pt-2">
+              <h3 className="font-semibold text-gray-900 border-b border-gray-100 pb-2">Perfil Operativo</h3>
+              <FormField
+                control={form.control}
+                name="roleId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rol (Opcional)</FormLabel>
                     <FormControl>
                       <select 
                         {...field} 
                         value={field.value || ""}
                         className="flex h-10 w-full items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <option value="">Seleccione una sucursal</option>
-                        {branches?.map((b: any) => (
-                          <option key={b.id} value={b.id}>{b.name}</option>
+                        <option value="">Ninguno (Sin Rol)</option>
+                        {roles?.map((r: any) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
                         ))}
                       </select>
                     </FormControl>
@@ -199,7 +184,32 @@ export function UserFormModal({ user, trigger }: UserFormModalProps) {
                   </FormItem>
                 )}
               />
-            )}
+
+              {showBranchSelect && form.watch("roleId") && (
+                <FormField
+                  control={form.control}
+                  name="branchId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sucursal Asignada</FormLabel>
+                      <FormControl>
+                        <select 
+                          {...field} 
+                          value={field.value || ""}
+                          className="flex h-10 w-full items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <option value="">Seleccione una sucursal</option>
+                          {branches?.map((b: any) => (
+                            <option key={b.id} value={b.id}>{b.name}</option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
 
             <div className="pt-4 flex justify-end">
               <button 

@@ -1,11 +1,13 @@
 import { Router } from 'express';
-import { getProducts, createProduct, getProductStock, adjustStock } from '../controllers/product.controller';
+import { getProducts, createProduct, updateProduct, deleteProduct, getProductStock, adjustStock } from '../controllers/product.controller';
 import { requireAuth, requirePermission, requireBranchAccess } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 // Endpoint para crear productos: Solo permitido para el rol ADMIN
 router.post('/', requireAuth, requirePermission('inventory.create_product'), createProduct);
+router.put('/:id', requireAuth, requirePermission('inventory.create_product'), updateProduct);
+router.delete('/:id', requireAuth, requirePermission('inventory.create_product'), deleteProduct);
 
 // Endpoint para consultar el catálogo general.
 // Requiere branchId (lo valida requireBranchAccess según BR-09, BR-10)

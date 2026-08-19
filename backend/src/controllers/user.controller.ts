@@ -12,9 +12,16 @@ const userSchema = z.object({
   branchId: z.string().uuid("Sucursal inválida").optional().nullable()
 });
 
+const profileSchema = z.object({
+  phone: z.string().optional().nullable(),
+  avatar: z.string().optional().nullable(),
+  email: z.string().email("Correo inválido").optional(),
+});
+
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany({
+      where: { isActive: true },
       include: {
         role: true,
         branch: { select: { name: true } }
@@ -97,5 +104,45 @@ export const updateUser = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updateUser:', error);
     return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al actualizar usuario', 500);
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: false }
+    });
+    return sendSuccess(res, { message: 'Usuario eliminado lógicamente' });
+  } catch (error) {
+    console.error('Error deleteUser:', error);
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al eliminar usuario', 500);
+  }
+};
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, 'UNAUTHORIZED', 'No autenticado', 401);
+
+    const result = profileSchema.safeParse(req.body);
+    if (!result.success) return sendError(res, 'VALIDATION_ERROR', 'Datos inválidos', 400, result.error.issues);
+
+    if (result.data.email) {
+      const emailCheck = await prisma.user.findUnique({ where: { email: result.data.email } });
+      if (emailCheck && emailCheck.id !== userId) return sendError(res, 'CONFLICT', 'El correo ya está en uso', 409);
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: result.data,
+      select: { id: true, name: true, email: true, phone: true, avatar: true, role: { select: { name: true } } }
+    });
+
+    return sendSuccess(res, updated);
+  } catch (error) {
+    console.error('Error updateProfile:', error);
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al actualizar perfil', 500);
   }
 };

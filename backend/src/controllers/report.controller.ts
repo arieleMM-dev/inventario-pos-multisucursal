@@ -89,3 +89,60 @@ export const getLowStockReport = async (req: Request, res: Response) => {
     return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al generar el reporte de stock bajo', 500);
   }
 };
+
+export const getKPIs = async (req: Request, res: Response) => {
+  try {
+    const { branchId } = req.query;
+
+    const activeUsers = await prisma.user.count({ where: { isActive: true } });
+    const totalBranches = await prisma.branch.count({ where: { isActive: true } });
+
+    const stocks = await prisma.branchStock.findMany({
+      where: branchId ? { branchId: String(branchId) } : {},
+      include: { product: true }
+    });
+
+    const totalStockValue = stocks.reduce((acc, stock) => acc + (stock.quantity * stock.product.price), 0);
+
+    return sendSuccess(res, {
+      activeUsers,
+      totalBranches,
+      totalStockValue
+    });
+  } catch (error) {
+    console.error('Error getKPIs:', error);
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al obtener KPIs', 500);
+  }
+};
+
+export const getSalesTrend = async (req: Request, res: Response) => {
+  try {
+    const { branchId, from, to } = req.query;
+    const toDate = to ? new Date(to as string) : new Date();
+    const fromDate = from ? new Date(from as string) : new Date(new Date().setDate(toDate.getDate() - 30));
+
+    const sales = await prisma.sale.findMany({
+      where: {
+        branchId: branchId ? String(branchId) : undefined,
+        createdAt: { gte: fromDate, lte: toDate }
+      },
+      select: { total: true, createdAt: true }
+    });
+
+    const grouped = sales.reduce((acc: any, sale) => {
+      const dateStr = sale.createdAt.toISOString().split('T')[0];
+      acc[dateStr] = (acc[dateStr] || 0) + sale.total;
+      return acc;
+    }, {});
+
+    const trend = Object.entries(grouped).map(([date, total]) => ({
+      date,
+      total
+    })).sort((a, b) => a.date.localeCompare(b.date));
+
+    return sendSuccess(res, trend);
+  } catch (error) {
+    console.error('Error getSalesTrend:', error);
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al obtener tendencia de ventas', 500);
+  }
+};

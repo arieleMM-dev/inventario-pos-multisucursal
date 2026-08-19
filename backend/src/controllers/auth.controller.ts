@@ -46,6 +46,7 @@ export const login = async (req: Request, res: Response) => {
     const payload = {
       userId: user.id,
       role: user.role.name,
+      isSystem: user.role.isSystem,
       permissions,
       branchId: user.branchId,
     };
@@ -63,6 +64,7 @@ export const login = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role.name,
+        isSystem: user.role.isSystem,
         permissions,
         branchId: user.branchId,
       }

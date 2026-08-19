@@ -10,6 +10,9 @@ import { useAuth } from '@/context/AuthContext';
 import { ProductFormModal } from './products/ProductFormModal';
 import { StockAdjustModal } from './products/StockAdjustModal';
 import { useState } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useQueryClient } from '@tanstack/react-query';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -58,6 +61,8 @@ const StatusBadge = ({ status, stock }: { status: ProductStatus; stock: number }
 export function InventoryTable() {
   const { selectedBranchId } = useAuth();
   const [adjustProduct, setAdjustProduct] = useState<{ id: string, name: string, stock: number } | null>(null);
+  const [productToDelete, setProductToDelete] = useState<{ id: string, name: string } | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: products, isLoading, isError } = useQuery<ProductData[]>({
     queryKey: ['products', selectedBranchId],
@@ -129,12 +134,29 @@ export function InventoryTable() {
                   <StatusBadge status={item.status} stock={item.stockInBranch} />
                 </td>
                 <td className="px-6 py-2 text-right">
-                  <button 
-                    onClick={() => setAdjustProduct({ id: item.id, name: item.name, stock: item.stockInBranch })}
-                    className="text-brand-500 hover:text-brand-600 p-1 rounded-md hover:bg-brand-50 font-medium text-xs transition-colors"
-                  >
-                    Ajustar
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="text-gray-400 hover:text-brand-500 p-1 rounded-md hover:bg-gray-100 transition-colors">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setAdjustProduct({ id: item.id, name: item.name, stock: item.stockInBranch })}>
+                        Ajustar Stock
+                      </DropdownMenuItem>
+                      <ProductFormModal 
+                        product={item} 
+                        trigger={
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            Editar Producto
+                          </DropdownMenuItem>
+                        } 
+                      />
+                      <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setProductToDelete({ id: item.id, name: item.name })}>
+                        Eliminar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </td>
               </tr>
             ))}
@@ -142,12 +164,39 @@ export function InventoryTable() {
         </table>
       </div>
 
+      {/* Modals */}
       <StockAdjustModal 
         productId={adjustProduct?.id || null}
         productName={adjustProduct?.name || ''}
         currentStock={adjustProduct?.stock || 0}
         onClose={() => setAdjustProduct(null)}
       />
+
+      <AlertDialog open={!!productToDelete} onOpenChange={() => setProductToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar {productToDelete?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El producto ya no estará disponible en el inventario.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={async () => {
+                if (productToDelete) {
+                  await api.delete(`/products/${productToDelete.id}`);
+                  queryClient.invalidateQueries({ queryKey: ['products'] });
+                  setProductToDelete(null);
+                }
+              }}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

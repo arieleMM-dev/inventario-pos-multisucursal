@@ -26,9 +26,10 @@ enum MovementType {
 }
 
 model Branch {
-  id      String  @id @default(uuid())
-  name    String
-  address String?
+  id       String  @id @default(uuid())
+  name     String
+  address  String?
+  isActive Boolean @default(true)
 
   users          User[]
   stocks         BranchStock[]
@@ -49,10 +50,11 @@ model Permission {
 }
 
 model Role {
-  id          String @id @default(uuid())
-  name        String @unique
+  id          String  @id @default(uuid())
+  name        String  @unique
   description String?
   isSystem    Boolean @default(false)
+  isActive    Boolean @default(true)
   
   permissions RolePermission[]
   users       User[]
@@ -69,10 +71,13 @@ model RolePermission {
 }
 
 model User {
-  id           String @id @default(uuid())
-  email        String @unique
+  id           String  @id @default(uuid())
+  email        String  @unique
   passwordHash String
   name         String
+  phone        String?
+  avatar       String?
+  isActive     Boolean @default(true)
   
   roleId       String
   role         Role   @relation(fields: [roleId], references: [id])
@@ -110,12 +115,13 @@ model Client {
 }
 
 model Product {
-  id       String @id @default(uuid())
-  sku      String @unique
+  id       String  @id @default(uuid())
+  sku      String  @unique
   name     String
   category String
   price    Float
   minStock Int
+  isActive Boolean @default(true)
 
   stocks        BranchStock[]
   movements     StockMovement[]

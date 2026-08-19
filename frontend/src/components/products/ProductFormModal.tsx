@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -33,7 +33,7 @@ const formSchema = z.object({
   minStock: z.coerce.number().int().nonnegative("Debe ser mayor o igual a 0"),
 });
 
-export function ProductFormModal() {
+export function ProductFormModal({ product, trigger }: any) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { selectedBranchId } = useAuth();
@@ -42,35 +42,57 @@ export function ProductFormModal() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
-      sku: "",
-      name: "",
-      category: "",
-      price: 0,
-      minStock: 5,
+      sku: product?.sku || "",
+      name: product?.name || "",
+      category: product?.category || "",
+      price: product?.price || 0,
+      minStock: product?.minStock || 5,
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        sku: product?.sku || "",
+        name: product?.name || "",
+        category: product?.category || "",
+        price: product?.price || 0,
+        minStock: product?.minStock || 5,
+      });
+      setError(null);
+    }
+  }, [open, product, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setError(null);
     try {
-      await api.post("/products", values);
+      if (product) {
+        await api.put(`/products/${product.id}`, values);
+      } else {
+        await api.post("/products", values);
+      }
       queryClient.invalidateQueries({ queryKey: ["products", selectedBranchId] });
       setOpen(false);
-      form.reset();
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || "Error al crear el producto");
+      setError(err.response?.data?.error?.message || "Error al guardar el producto");
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-        <Plus className="w-4 h-4" />
-        Nuevo producto
-      </DialogTrigger>
+      <DialogTrigger render={
+        trigger ? (
+          trigger
+        ) : (
+          <button className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            <Plus className="w-4 h-4" />
+            Nuevo producto
+          </button>
+        )
+      } />
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Crear Nuevo Producto</DialogTitle>
+          <DialogTitle>{product ? "Editar Producto" : "Crear Nuevo Producto"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

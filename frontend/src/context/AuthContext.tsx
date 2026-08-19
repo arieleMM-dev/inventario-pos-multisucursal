@@ -8,8 +8,11 @@ interface User {
   email: string;
   name: string;
   role: string;
+  isSystem: boolean;
   permissions: string[];
   branchId: string | null;
+  phone?: string;
+  avatar?: string;
 }
 
 interface AuthContextType {
@@ -70,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = (permission: string) => {
     if (!user) return false;
-    if (user.role === 'ADMIN') return true;
+    if (user.isSystem) return true;
     return user.permissions?.includes(permission) || false;
   };
 

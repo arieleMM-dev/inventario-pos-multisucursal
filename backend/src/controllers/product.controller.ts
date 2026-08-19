@@ -19,7 +19,7 @@ export const getProducts = async (req: Request, res: Response) => {
       return sendError(res, 'BAD_REQUEST', 'Debe enviar el parámetro branchId', 400);
     }
 
-    const whereClause: any = {};
+    const whereClause: any = { isActive: true };
     if (category) {
       whereClause.category = String(category);
     }
@@ -82,8 +82,36 @@ export const createProduct = async (req: Request, res: Response) => {
 
     return sendSuccess(res, newProduct, 201);
   } catch (error) {
-    console.error('Error en createProduct:', error);
     return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al crear producto', 500);
+  }
+};
+
+export const updateProduct = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const result = createProductSchema.safeParse(req.body);
+    if (!result.success) return sendError(res, 'VALIDATION_ERROR', 'Datos inválidos', 400, result.error.issues);
+    
+    const product = await prisma.product.update({
+      where: { id },
+      data: result.data
+    });
+    return sendSuccess(res, product);
+  } catch (error) {
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al actualizar producto', 500);
+  }
+};
+
+export const deleteProduct = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    await prisma.product.update({
+      where: { id },
+      data: { isActive: false }
+    });
+    return sendSuccess(res, { message: 'Producto eliminado lógicamente' });
+  } catch (error) {
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al eliminar producto', 500);
   }
 };
 

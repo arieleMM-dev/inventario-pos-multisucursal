@@ -2,22 +2,29 @@ import { prisma } from '../src/utils/prisma';
 import * as argon2 from 'argon2';
 
 const permissions = [
-  // POS
-  { code: 'pos.sell', module: 'Punto de Venta', description: 'Realizar ventas y cobrar' },
-  // INVENTORY
-  { code: 'inventory.view', module: 'Inventario', description: 'Ver catálogo y stock' },
+  // Inventario
+  { code: 'inventory.view', module: 'Inventario', description: 'Ver productos y stock' },
   { code: 'inventory.create_product', module: 'Inventario', description: 'Crear o editar productos' },
-  { code: 'inventory.adjust', module: 'Inventario', description: 'Realizar ajustes manuales de stock' },
-  // TRANSFERS
+  { code: 'inventory.delete', module: 'Inventario', description: 'Eliminar productos' },
+  { code: 'inventory.adjust', module: 'Inventario', description: 'Realizar ajustes de stock' },
+  // Transferencias
   { code: 'transfers.view', module: 'Transferencias', description: 'Ver transferencias' },
   { code: 'transfers.create', module: 'Transferencias', description: 'Enviar transferencias' },
   { code: 'transfers.receive', module: 'Transferencias', description: 'Recibir transferencias' },
-  // REPORTS
+  // Ventas (POS)
+  { code: 'pos.view', module: 'Ventas', description: 'Ver historial de ventas' },
+  { code: 'pos.sell', module: 'Ventas', description: 'Realizar ventas y cobrar' },
+  { code: 'customers.view', module: 'Ventas', description: 'Ver clientes' },
+  { code: 'customers.manage', module: 'Ventas', description: 'Crear o editar clientes' },
+  // Reportes
   { code: 'reports.view', module: 'Reportes', description: 'Ver analíticas y métricas' },
-  // CONFIG
-  { code: 'users.manage', module: 'Configuración', description: 'Crear y editar usuarios' },
-  { code: 'branches.manage', module: 'Configuración', description: 'Crear y editar sucursales' },
-  { code: 'roles.manage', module: 'Configuración', description: 'Crear y editar roles/permisos' },
+  // Configuración
+  { code: 'users.view', module: 'Configuración', description: 'Ver usuarios' },
+  { code: 'users.manage', module: 'Configuración', description: 'Gestionar usuarios' },
+  { code: 'roles.view', module: 'Configuración', description: 'Ver roles' },
+  { code: 'roles.manage', module: 'Configuración', description: 'Gestionar roles y permisos' },
+  { code: 'branches.view', module: 'Configuración', description: 'Ver sucursales' },
+  { code: 'branches.manage', module: 'Configuración', description: 'Gestionar sucursales' },
 ];
 
 async function main() {
@@ -49,18 +56,30 @@ async function main() {
   const allPermissions = await prisma.permission.findMany();
 
   // Admin: Todos los permisos
-  const adminRole = await prisma.role.upsert({
-    where: { name: 'ADMIN' },
-    update: {},
-    create: {
-      name: 'ADMIN',
-      description: 'Administrador general del sistema',
-      isSystem: true,
-      permissions: {
-        create: allPermissions.map(p => ({ permissionId: p.id }))
+  // Primero limpiamos los permisos del admin si existen para recargarlos
+  let adminRole = await prisma.role.findUnique({ where: { name: 'ADMIN' } });
+  if (adminRole) {
+    await prisma.rolePermission.deleteMany({ where: { roleId: adminRole.id } });
+    adminRole = await prisma.role.update({
+      where: { name: 'ADMIN' },
+      data: {
+        permissions: {
+          create: allPermissions.map(p => ({ permissionId: p.id }))
+        }
       }
-    }
-  });
+    });
+  } else {
+    adminRole = await prisma.role.create({
+      data: {
+        name: 'ADMIN',
+        description: 'Administrador general del sistema',
+        isSystem: true,
+        permissions: {
+          create: allPermissions.map(p => ({ permissionId: p.id }))
+        }
+      }
+    });
+  }
 
   // Encargado: Casi todos excepto gestión de usuarios y roles
   const encargadoPermissions = allPermissions.filter(p => p.module !== 'Configuración');

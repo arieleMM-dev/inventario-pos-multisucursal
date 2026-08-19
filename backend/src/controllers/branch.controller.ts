@@ -11,6 +11,7 @@ const branchSchema = z.object({
 export const getBranches = async (req: Request, res: Response) => {
   try {
     const branches = await prisma.branch.findMany({
+      where: { isActive: true },
       select: { id: true, name: true, address: true }
     });
     return sendSuccess(res, branches);
@@ -49,5 +50,19 @@ export const updateBranch = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updateBranch:', error);
     return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al actualizar sucursal', 500);
+  }
+};
+
+export const deleteBranch = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    await prisma.branch.update({
+      where: { id },
+      data: { isActive: false }
+    });
+    return sendSuccess(res, { message: 'Sucursal eliminada lógicamente' });
+  } catch (error) {
+    console.error('Error deleteBranch:', error);
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al eliminar sucursal', 500);
   }
 };
