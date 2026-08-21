@@ -49,20 +49,20 @@ export default function PosPage() {
   );
 
   return (
-    <div className="h-full flex flex-row w-full bg-[var(--color-pos-bg)]">
+    <div className="h-full flex flex-row w-full bg-[var(--pos-brutal-bg)]">
       {/* Product Grid Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         
         {/* Search and Filters Bar */}
-        <div className="p-4 bg-white/50 border-b border-[var(--color-gray-200)] flex items-center gap-4">
+        <div className="p-4 bg-[var(--pos-brutal-bg)] border-b-4 border-[var(--pos-brutal-fg)] flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-400)]" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--pos-brutal-fg)]" size={20} strokeWidth={2.5} />
             <input 
               type="text" 
-              placeholder="Buscar por nombre o SKU..." 
+              placeholder="BUSCAR POR NOMBRE O SKU..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-[var(--color-gray-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]"
+              className="w-full pl-10 pr-4 py-2 bg-[var(--pos-brutal-panel)] border-2 border-[var(--pos-brutal-fg)] rounded-none focus:outline-none focus:shadow-[4px_4px_0_0_var(--pos-brutal-fg)] transition-shadow text-[var(--pos-brutal-fg)] font-bold uppercase placeholder:text-[var(--pos-brutal-fg)]/50"
             />
           </div>
         </div>

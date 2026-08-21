@@ -29,10 +29,10 @@ interface Transfer {
 }
 
 const statusColors = {
-  PENDIENTE: 'bg-yellow-100 border-yellow-200 text-yellow-800',
-  EN_TRANSITO: 'bg-blue-100 border-blue-200 text-blue-800',
-  RECIBIDO: 'bg-green-100 border-green-200 text-green-800',
-  CANCELADO: 'bg-red-100 border-red-200 text-red-800',
+  PENDIENTE: 'bg-[#FFDE59] border-2 border-[var(--pos-brutal-fg)] text-[var(--pos-brutal-fg)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)]',
+  EN_TRANSITO: 'bg-[#38BDF8] border-2 border-[var(--pos-brutal-fg)] text-[var(--pos-brutal-fg)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)]',
+  RECIBIDO: 'bg-[#4ADE80] border-2 border-[var(--pos-brutal-fg)] text-[var(--pos-brutal-fg)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)]',
+  CANCELADO: 'bg-[#F87171] border-2 border-[var(--pos-brutal-fg)] text-[var(--pos-brutal-fg)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)]',
 };
 
 const statusIcons = {
@@ -88,13 +88,13 @@ export function TransferKanban() {
         <div className="flex gap-2 mt-3">
           <button 
             onClick={() => updateStatus.mutate({ id: transfer.id, status: 'EN_TRANSITO' })}
-            className="flex-1 bg-brand-500 text-white text-xs py-1.5 rounded hover:bg-brand-600 transition-colors"
+            className="flex-1 bg-[var(--pos-brutal-primary)] text-white font-black uppercase text-[10px] py-1.5 border-2 border-[var(--pos-brutal-fg)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all rounded-none"
           >
             Enviar
           </button>
           <button 
             onClick={() => updateStatus.mutate({ id: transfer.id, status: 'CANCELADO' })}
-            className="flex-1 bg-gray-100 text-gray-700 text-xs py-1.5 rounded hover:bg-gray-200 transition-colors"
+            className="flex-1 bg-[var(--pos-brutal-panel)] text-[var(--pos-brutal-fg)] font-black uppercase text-[10px] py-1.5 border-2 border-[var(--pos-brutal-fg)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all rounded-none"
           >
             Cancelar
           </button>
@@ -107,7 +107,7 @@ export function TransferKanban() {
         <div className="flex gap-2 mt-3">
           <button 
             onClick={() => updateStatus.mutate({ id: transfer.id, status: 'RECIBIDO' })}
-            className="flex-1 bg-success-text text-white text-xs py-1.5 rounded hover:bg-green-600 transition-colors"
+            className="flex-1 bg-[#4ADE80] text-[var(--pos-brutal-fg)] font-black uppercase text-[10px] py-1.5 border-2 border-[var(--pos-brutal-fg)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all rounded-none"
           >
             Recibir
           </button>
@@ -124,45 +124,45 @@ export function TransferKanban() {
         const columnTransfers = transfers?.filter(t => t.status === column.status) || [];
         
         return (
-          <div key={column.status} className="flex-1 min-w-[300px] bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+          <div key={column.status} className="flex-1 min-w-[300px] bg-[var(--pos-brutal-panel)] rounded-none p-4 border-4 border-[var(--pos-brutal-fg)] shadow-[6px_6px_0_0_var(--pos-brutal-fg)]">
+            <div className="flex items-center justify-between mb-4 border-b-4 border-[var(--pos-brutal-fg)] pb-2">
+              <h3 className="font-black text-[var(--pos-brutal-fg)] uppercase tracking-tighter flex items-center gap-2">
                 {statusIcons[column.status]}
                 {column.title}
               </h3>
-              <span className="bg-gray-200 text-gray-600 text-xs py-0.5 px-2 rounded-full font-medium">
+              <span className="bg-[var(--pos-brutal-fg)] text-[var(--pos-brutal-panel)] text-xs py-0.5 px-2 rounded-none font-black shadow-[2px_2px_0_0_var(--pos-brutal-fg)]">
                 {columnTransfers.length}
               </span>
             </div>
 
             <div className="space-y-3">
               {columnTransfers.map(transfer => (
-                <div key={transfer.id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                <div key={transfer.id} className="bg-[var(--pos-brutal-bg)] p-4 rounded-none border-2 border-[var(--pos-brutal-fg)] shadow-[4px_4px_0_0_var(--pos-brutal-fg)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_var(--pos-brutal-fg)] transition-all">
                   <div className="flex justify-between items-start mb-2">
-                    <div className="text-xs text-gray-500 font-medium">
+                    <div className="text-xs text-[var(--pos-brutal-fg)] font-bold uppercase">
                       {format(new Date(transfer.createdAt), "d MMM yyyy, HH:mm", { locale: es })}
                     </div>
-                    <div className={cn("text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border", statusColors[transfer.status])}>
+                    <div className={cn("text-[10px] uppercase font-black px-2 py-0.5 rounded-none", statusColors[transfer.status])}>
                       {transfer.status}
                     </div>
                   </div>
                   
-                  <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-                    <Package className="w-4 h-4 text-gray-400" />
+                  <h4 className="font-black text-[var(--pos-brutal-fg)] mb-1 flex items-center gap-2 uppercase tracking-tighter">
+                    <Package className="w-5 h-5 text-[var(--pos-brutal-fg)]" strokeWidth={2.5} />
                     {transfer.product.name}
                   </h4>
-                  <div className="text-sm text-gray-600 mb-3">
-                    <span className="font-medium text-gray-900">{transfer.quantity}</span> unidades
+                  <div className="text-sm text-[var(--pos-brutal-fg)] mb-3 font-bold uppercase">
+                    <span className="font-black text-lg">{transfer.quantity}</span> unidades
                   </div>
 
-                  <div className="bg-gray-50 p-2 rounded text-xs space-y-1 mb-2">
+                  <div className="bg-[var(--pos-brutal-panel)] p-2 rounded-none border-2 border-[var(--pos-brutal-fg)] text-xs space-y-1 mb-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Origen:</span>
-                      <span className="font-medium text-gray-900 truncate max-w-[120px]">{transfer.originBranch.name}</span>
+                      <span className="text-[var(--pos-brutal-fg)] font-bold uppercase">Origen:</span>
+                      <span className="font-black text-[var(--pos-brutal-fg)] uppercase truncate max-w-[120px]">{transfer.originBranch.name}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Destino:</span>
-                      <span className="font-medium text-brand-600 truncate max-w-[120px]">{transfer.destinationBranch.name}</span>
+                      <span className="text-[var(--pos-brutal-fg)] font-bold uppercase">Destino:</span>
+                      <span className="font-black text-[var(--pos-brutal-primary)] uppercase truncate max-w-[120px]">{transfer.destinationBranch.name}</span>
                     </div>
                   </div>
 
@@ -171,7 +171,7 @@ export function TransferKanban() {
               ))}
 
               {columnTransfers.length === 0 && (
-                <div className="text-center p-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 text-sm">
+                <div className="text-center p-6 border-4 border-dashed border-[var(--pos-brutal-fg)] rounded-none text-[var(--pos-brutal-fg)] font-black uppercase shadow-[4px_4px_0_0_var(--pos-brutal-fg)]">
                   No hay transferencias
                 </div>
               )}

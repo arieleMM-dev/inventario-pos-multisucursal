@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { Plus } from "lucide-react";
 
@@ -38,6 +38,14 @@ export function ProductFormModal({ product, trigger }: any) {
   const [error, setError] = useState<string | null>(null);
   const { selectedBranchId } = useAuth();
   const queryClient = useQueryClient();
+
+  const { data: categories } = useQuery({
+    queryKey: ["product-categories"],
+    queryFn: async () => {
+      const res = await api.get("/products/categories");
+      return res.data.data;
+    }
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema) as any,
@@ -63,6 +71,23 @@ export function ProductFormModal({ product, trigger }: any) {
     }
   }, [open, product, form]);
 
+  const handleCategoryBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const category = e.target.value;
+    if (!product && category && category.length >= 3) {
+      try {
+        const res = await api.get(`/products/next-sku?category=${encodeURIComponent(category)}`);
+        const nextSku = res.data.data.sku;
+        const currentSku = form.getValues('sku');
+        // Actualizamos el SKU si está vacío o si parece que fue generado por otra categoría
+        if (!currentSku || currentSku.length < 3 || currentSku.includes('-')) {
+           form.setValue("sku", nextSku, { shouldValidate: true });
+        }
+      } catch (err) {
+        console.error("No se pudo obtener el siguiente SKU", err);
+      }
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setError(null);
     try {
@@ -84,8 +109,8 @@ export function ProductFormModal({ product, trigger }: any) {
         trigger ? (
           trigger
         ) : (
-          <button className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-            <Plus className="w-4 h-4" />
+          <button className="flex items-center gap-2 bg-[var(--pos-brutal-panel)] hover:bg-[var(--pos-brutal-accent)] text-[var(--pos-brutal-fg)] border-2 border-[var(--pos-brutal-fg)] font-black uppercase shadow-[4px_4px_0_0_var(--pos-brutal-fg)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all duration-150 rounded-none px-5 py-2.5 text-sm cursor-pointer">
+            <Plus className="w-5 h-5" />
             Nuevo producto
           </button>
         )
@@ -131,7 +156,22 @@ export function ProductFormModal({ product, trigger }: any) {
                 <FormItem>
                   <FormLabel>Categoría</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ej: Bebidas" {...field} />
+                    <div className="relative">
+                      <Input 
+                        placeholder="Ej: Bebidas" 
+                        {...field} 
+                        list="category-list"
+                        onBlur={(e) => {
+                          field.onBlur();
+                          handleCategoryBlur(e);
+                        }}
+                      />
+                      <datalist id="category-list">
+                        {categories?.map((cat: string) => (
+                          <option key={cat} value={cat} />
+                        ))}
+                      </datalist>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -170,7 +210,7 @@ export function ProductFormModal({ product, trigger }: any) {
               <button 
                 type="submit" 
                 disabled={form.formState.isSubmitting}
-                className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                className="bg-[var(--pos-brutal-panel)] hover:bg-[var(--pos-brutal-accent)] text-[var(--pos-brutal-fg)] border-2 border-[var(--pos-brutal-fg)] font-black uppercase shadow-[4px_4px_0_0_var(--pos-brutal-fg)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all duration-150 rounded-none px-6 py-2.5 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {form.formState.isSubmitting ? "Guardando..." : "Guardar Producto"}
               </button>

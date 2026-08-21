@@ -120,7 +120,8 @@ async function main() {
     create: {
       email: 'admin@empresa.com',
       passwordHash: adminPassword,
-      name: 'Administrador General',
+      firstName: 'Admin',
+      lastName: 'System',
       roleId: adminRole.id,
       branchId: null,
     },

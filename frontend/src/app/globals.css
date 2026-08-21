@@ -5,9 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-brand-50: #F0FDFA;
-  --color-brand-500: #0F766E;
-  --color-brand-600: #0E6660;
+  --color-brand-50: #ECFEFF; /* Cyan 50 */
+  --color-brand-500: #0891B2; /* Cyan 600 */
+  --color-brand-600: #0E7490; /* Cyan 700 */
 
   --color-success-bg: #DCFCE7;
   --color-success-text: #166534;
@@ -57,8 +57,8 @@
 
 /* Base styles to set the background of the app */
 body {
-  background-color: var(--color-gray-50);
-  color: var(--color-gray-900);
+  background-color: var(--pos-brutal-bg);
+  color: var(--pos-brutal-fg);
 }
 
 @theme inline {
@@ -105,6 +105,12 @@ body {
 }
 
 :root {
+  --pos-brutal-bg: #E3E1D9; /* Blanco hueso/arena oscuro para el fondo base */
+  --pos-brutal-panel: #F4F2EB; /* Pergamino ligeramente más claro para tarjetas, NO blanco puro */
+  --pos-brutal-fg: #1C1C1C; /* Grafito */
+  --pos-brutal-primary: #2D5A27; /* Verde Bosque para botones y acentos */
+  --pos-brutal-accent: #D5D8CF; /* Gris/Verde tenue para hovers */
+  
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

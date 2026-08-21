@@ -83,26 +83,26 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto py-8">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Mi Perfil</h2>
+      <div className="bg-[var(--pos-brutal-panel)] border-4 border-[var(--pos-brutal-fg)] shadow-[6px_6px_0_0_var(--pos-brutal-fg)] rounded-none p-8">
+        <h2 className="text-2xl font-black uppercase tracking-tighter text-[var(--pos-brutal-fg)] mb-6">Mi Perfil</h2>
         
-        {error && <div className="mb-6 p-3 bg-danger-bg text-danger-text rounded-md text-sm">{error}</div>}
-        {success && <div className="mb-6 p-3 bg-brand-50 text-brand-700 rounded-md text-sm">Perfil actualizado exitosamente</div>}
+        {error && <div className="mb-6 p-3 bg-red-100 border-2 border-red-600 text-red-900 font-bold uppercase rounded-none">{error}</div>}
+        {success && <div className="mb-6 p-3 bg-green-100 border-2 border-[var(--pos-brutal-primary)] text-[var(--pos-brutal-primary)] font-bold uppercase rounded-none">Perfil actualizado exitosamente</div>}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
             <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6 mb-8">
               <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
+                <div className="w-24 h-24 rounded-none overflow-hidden bg-[var(--pos-brutal-bg)] border-4 border-[var(--pos-brutal-fg)] flex items-center justify-center shadow-[4px_4px_0_0_var(--pos-brutal-fg)]">
                   {currentAvatar ? (
                     <img src={currentAvatar} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-3xl font-medium text-gray-400">{user?.name?.[0] || 'U'}</span>
+                    <span className="text-3xl font-black text-[var(--pos-brutal-fg)]">{user?.name?.[0] || 'U'}</span>
                   )}
                 </div>
-                <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <Camera className="w-6 h-6 text-white" />
+                <div className="absolute inset-0 bg-black/40 rounded-none opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity border-4 border-transparent hover:border-[var(--pos-brutal-primary)]">
+                  <Camera className="w-8 h-8 text-white" strokeWidth={2.5} />
                 </div>
                 <input 
                   type="file" 
@@ -113,9 +113,9 @@ export default function ProfilePage() {
                 />
               </div>
               <div className="flex-1 space-y-1 text-center sm:text-left pt-2">
-                <h3 className="font-medium text-gray-900">{user?.name}</h3>
-                <p className="text-sm text-gray-500">{user?.role}</p>
-                <p className="text-xs text-gray-400 mt-2">Permitido JPG, PNG o WEBP. Máx 2MB.</p>
+                <h3 className="font-black text-[var(--pos-brutal-fg)] uppercase text-xl">{user?.name}</h3>
+                <p className="text-sm font-bold text-[var(--pos-brutal-fg)]/80 uppercase">{user?.role}</p>
+                <p className="text-xs font-bold text-[var(--pos-brutal-fg)]/60 uppercase mt-2">Permitido JPG, PNG o WEBP. Máx 2MB.</p>
               </div>
             </div>
 
@@ -149,13 +149,13 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="pt-6 flex justify-end border-t border-gray-100">
+            <div className="pt-6 flex justify-end border-t-4 border-[var(--pos-brutal-fg)]">
               <button 
                 type="submit" 
                 disabled={form.formState.isSubmitting || !form.formState.isDirty}
-                className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 bg-[var(--pos-brutal-primary)] text-white border-2 border-[var(--pos-brutal-fg)] font-black uppercase shadow-[4px_4px_0_0_var(--pos-brutal-fg)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all duration-150 rounded-none px-6 py-2 text-sm disabled:opacity-50 disabled:shadow-none disabled:translate-x-[4px] disabled:translate-y-[4px]"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-5 h-5" strokeWidth={2.5} />
                 {form.formState.isSubmitting ? "Guardando..." : "Guardar Cambios"}
               </button>
             </div>

@@ -10,7 +10,8 @@ export const getClients = async (req: Request, res: Response) => {
     if (search) {
       whereClause = {
         OR: [
-          { name: { contains: search as string, mode: 'insensitive' } },
+          { firstName: { contains: search as string, mode: 'insensitive' } },
+          { lastName: { contains: search as string, mode: 'insensitive' } },
           { document: { contains: search as string, mode: 'insensitive' } }
         ]
       };
@@ -28,7 +29,8 @@ export const getClients = async (req: Request, res: Response) => {
 };
 
 const createClientSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido"),
+  firstName: z.string().regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo letras y espacios permitidos").min(1, "El nombre es requerido"),
+  lastName: z.string().regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo letras y espacios permitidos").min(1, "El apellido es requerido"),
   email: z.string().email("Correo inválido").optional().or(z.literal("")),
   document: z.string().optional().or(z.literal(""))
 });
@@ -46,7 +48,8 @@ export const createClient = async (req: Request, res: Response) => {
 
     const client = await prisma.client.create({
       data: {
-        name: result.data.name,
+        firstName: result.data.firstName,
+        lastName: result.data.lastName,
         email: result.data.email || null,
         document: result.data.document || null
       }

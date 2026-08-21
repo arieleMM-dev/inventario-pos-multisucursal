@@ -58,24 +58,24 @@ export default function ConfigPage() {
     <div className="p-6 h-[calc(100vh-64px)] overflow-hidden flex flex-col">
       <div className="mb-6 flex justify-between items-end shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl font-black uppercase tracking-tighter text-[var(--pos-brutal-fg)]">Configuración</h1>
+          <p className="text-[var(--pos-brutal-fg)] font-bold uppercase text-sm mt-1">
             Administra los usuarios del sistema y las sucursales.
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b border-gray-200 mb-6 shrink-0">
+      <div className="flex gap-4 mb-6 shrink-0 border-b-4 border-[var(--pos-brutal-fg)] pb-4">
         {hasPermission('users.manage') && (
           <button
             onClick={() => setActiveTab('users')}
             className={cn(
-              "pb-3 px-2 flex items-center gap-2 font-medium transition-colors border-b-2",
-              activeTab === 'users' ? "border-brand-500 text-brand-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              "px-4 py-2 flex items-center gap-2 font-black uppercase transition-colors border-2 rounded-none",
+              activeTab === 'users' ? "border-[var(--pos-brutal-fg)] bg-[var(--pos-brutal-primary)] text-white shadow-[4px_4px_0_0_var(--pos-brutal-fg)]" : "border-transparent text-[var(--pos-brutal-fg)] hover:border-[var(--pos-brutal-fg)] hover:shadow-[4px_4px_0_0_var(--pos-brutal-fg)]"
             )}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-5 h-5" strokeWidth={2.5} />
             Usuarios
           </button>
         )}
@@ -83,11 +83,11 @@ export default function ConfigPage() {
           <button
             onClick={() => setActiveTab('branches')}
             className={cn(
-              "pb-3 px-2 flex items-center gap-2 font-medium transition-colors border-b-2",
-              activeTab === 'branches' ? "border-brand-500 text-brand-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              "px-4 py-2 flex items-center gap-2 font-black uppercase transition-colors border-2 rounded-none",
+              activeTab === 'branches' ? "border-[var(--pos-brutal-fg)] bg-[var(--pos-brutal-primary)] text-white shadow-[4px_4px_0_0_var(--pos-brutal-fg)]" : "border-transparent text-[var(--pos-brutal-fg)] hover:border-[var(--pos-brutal-fg)] hover:shadow-[4px_4px_0_0_var(--pos-brutal-fg)]"
             )}
           >
-            <Store className="w-4 h-4" />
+            <Store className="w-5 h-5" strokeWidth={2.5} />
             Sucursales
           </button>
         )}
@@ -95,11 +95,11 @@ export default function ConfigPage() {
           <button
             onClick={() => setActiveTab('roles')}
             className={cn(
-              "pb-3 px-2 flex items-center gap-2 font-medium transition-colors border-b-2",
-              activeTab === 'roles' ? "border-brand-500 text-brand-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              "px-4 py-2 flex items-center gap-2 font-black uppercase transition-colors border-2 rounded-none",
+              activeTab === 'roles' ? "border-[var(--pos-brutal-fg)] bg-[var(--pos-brutal-primary)] text-white shadow-[4px_4px_0_0_var(--pos-brutal-fg)]" : "border-transparent text-[var(--pos-brutal-fg)] hover:border-[var(--pos-brutal-fg)] hover:shadow-[4px_4px_0_0_var(--pos-brutal-fg)]"
             )}
           >
-            <ShieldCheck className="w-4 h-4" />
+            <ShieldCheck className="w-5 h-5" strokeWidth={2.5} />
             Roles y Permisos
           </button>
         )}
@@ -107,40 +107,40 @@ export default function ConfigPage() {
 
       <div className="flex-1 overflow-auto">
         {activeTab === 'users' ? (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
-              <h2 className="font-semibold text-gray-900">Directorio de Usuarios</h2>
+          <div className="bg-[var(--pos-brutal-panel)] rounded-none border-4 border-[var(--pos-brutal-fg)] overflow-hidden shadow-[6px_6px_0_0_var(--pos-brutal-fg)] mb-8">
+            <div className="p-4 border-b-4 border-[var(--pos-brutal-fg)] flex justify-between items-center bg-[var(--pos-brutal-bg)]">
+              <h2 className="font-black text-[var(--pos-brutal-fg)] uppercase tracking-tighter">Directorio de Usuarios</h2>
               <UserFormModal />
             </div>
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-gray-500">
+              <thead className="bg-[var(--pos-brutal-bg)] text-[var(--pos-brutal-fg)] font-black uppercase">
                 <tr>
-                  <th className="px-4 py-3 font-medium border-b border-gray-200">Nombre</th>
-                  <th className="px-4 py-3 font-medium border-b border-gray-200">Email</th>
-                  <th className="px-4 py-3 font-medium border-b border-gray-200">Rol</th>
-                  <th className="px-4 py-3 font-medium border-b border-gray-200">Sucursal</th>
-                  <th className="px-4 py-3 font-medium border-b border-gray-200 text-right">Acciones</th>
+                  <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest">Nombre</th>
+                  <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest">Email</th>
+                  <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest">Rol</th>
+                  <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest">Sucursal</th>
+                  <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loadingUsers && <tr><td colSpan={5} className="p-4 text-center text-gray-500">Cargando...</td></tr>}
+              <tbody className="divide-y-0">
+                {loadingUsers && <tr><td colSpan={5} className="p-4 text-center font-bold uppercase text-[var(--pos-brutal-fg)]">Cargando...</td></tr>}
                 {users?.map((u: any) => (
-                  <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{u.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{u.email}</td>
+                  <tr key={u.id} className="hover:bg-[var(--pos-brutal-accent)] transition-colors border-b-2 border-[var(--pos-brutal-fg)]">
+                    <td className="px-4 py-3 font-black text-[var(--pos-brutal-fg)]">{u.name}</td>
+                    <td className="px-4 py-3 font-bold text-[var(--pos-brutal-fg)]">{u.email}</td>
                     <td className="px-4 py-3">
                       <span className={cn(
-                        "text-xs font-semibold px-2 py-1 rounded-full",
-                        u.role?.isSystem ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-700"
+                        "text-[10px] font-black uppercase px-2 py-0.5 rounded-none border-2 border-[var(--pos-brutal-fg)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)]",
+                        u.role?.isSystem ? "bg-[var(--pos-brutal-fg)] text-[var(--pos-brutal-panel)]" : "bg-[var(--pos-brutal-bg)] text-[var(--pos-brutal-fg)]"
                       )}>
                         {u.roleName}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{u.branch?.name || '-'}</td>
+                    <td className="px-4 py-3 font-bold text-[var(--pos-brutal-fg)]">{u.branch?.name || '-'}</td>
                     <td className="px-4 py-3 text-right">
                       <UserFormModal user={u} trigger={
-                        <button className="text-gray-400 hover:text-brand-600 p-1 rounded-md transition-colors">
-                          <Edit className="w-4 h-4" />
+                        <button className="text-[var(--pos-brutal-fg)] hover:bg-[var(--pos-brutal-fg)] hover:text-white p-2 border-2 border-transparent hover:border-[var(--pos-brutal-fg)] rounded-none transition-colors">
+                          <Edit className="w-5 h-5" strokeWidth={2.5} />
                         </button>
                       } />
                     </td>
@@ -150,29 +150,29 @@ export default function ConfigPage() {
             </table>
           </div>
         ) : activeTab === 'branches' ? (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
-              <h2 className="font-semibold text-gray-900">Listado de Sucursales</h2>
+          <div className="bg-[var(--pos-brutal-panel)] rounded-none border-4 border-[var(--pos-brutal-fg)] overflow-hidden shadow-[6px_6px_0_0_var(--pos-brutal-fg)] mb-8">
+            <div className="p-4 border-b-4 border-[var(--pos-brutal-fg)] flex justify-between items-center bg-[var(--pos-brutal-bg)]">
+              <h2 className="font-black text-[var(--pos-brutal-fg)] uppercase tracking-tighter">Listado de Sucursales</h2>
               <BranchFormModal />
             </div>
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-gray-500">
+              <thead className="bg-[var(--pos-brutal-bg)] text-[var(--pos-brutal-fg)] font-black uppercase">
                 <tr>
-                  <th className="px-4 py-3 font-medium border-b border-gray-200">Nombre</th>
-                  <th className="px-4 py-3 font-medium border-b border-gray-200">Dirección</th>
-                  <th className="px-4 py-3 font-medium border-b border-gray-200 text-right">Acciones</th>
+                  <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest">Nombre</th>
+                  <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest">Dirección</th>
+                  <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loadingBranches && <tr><td colSpan={3} className="p-4 text-center text-gray-500">Cargando...</td></tr>}
+              <tbody className="divide-y-0">
+                {loadingBranches && <tr><td colSpan={3} className="p-4 text-center font-bold uppercase text-[var(--pos-brutal-fg)]">Cargando...</td></tr>}
                 {branches?.map((b: any) => (
-                  <tr key={b.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{b.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{b.address || '-'}</td>
+                  <tr key={b.id} className="hover:bg-[var(--pos-brutal-accent)] transition-colors border-b-2 border-[var(--pos-brutal-fg)]">
+                    <td className="px-4 py-3 font-black text-[var(--pos-brutal-fg)]">{b.name}</td>
+                    <td className="px-4 py-3 font-bold text-[var(--pos-brutal-fg)]">{b.address || '-'}</td>
                     <td className="px-4 py-3 text-right">
                       <BranchFormModal branch={b} trigger={
-                        <button className="text-gray-400 hover:text-brand-600 p-1 rounded-md transition-colors">
-                          <Edit className="w-4 h-4" />
+                        <button className="text-[var(--pos-brutal-fg)] hover:bg-[var(--pos-brutal-fg)] hover:text-white p-2 border-2 border-transparent hover:border-[var(--pos-brutal-fg)] rounded-none transition-colors">
+                          <Edit className="w-5 h-5" strokeWidth={2.5} />
                         </button>
                       } />
                     </td>
@@ -182,34 +182,34 @@ export default function ConfigPage() {
             </table>
           </div>
         ) : activeTab === 'roles' ? (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
-            <h2 className="font-semibold text-gray-900">Roles del Sistema</h2>
+        <div className="bg-[var(--pos-brutal-panel)] rounded-none border-4 border-[var(--pos-brutal-fg)] overflow-hidden shadow-[6px_6px_0_0_var(--pos-brutal-fg)] mb-8">
+          <div className="p-4 border-b-4 border-[var(--pos-brutal-fg)] flex justify-between items-center bg-[var(--pos-brutal-bg)]">
+            <h2 className="font-black text-[var(--pos-brutal-fg)] uppercase tracking-tighter">Roles del Sistema</h2>
             <RoleFormModal />
           </div>
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-gray-500">
+            <thead className="bg-[var(--pos-brutal-bg)] text-[var(--pos-brutal-fg)] font-black uppercase">
               <tr>
-                <th className="px-4 py-3 font-medium border-b border-gray-200">Rol</th>
-                <th className="px-4 py-3 font-medium border-b border-gray-200">Descripción</th>
-                <th className="px-4 py-3 font-medium border-b border-gray-200">Permisos Activos</th>
-                <th className="px-4 py-3 font-medium border-b border-gray-200 text-right">Acciones</th>
+                <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest">Rol</th>
+                <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest">Descripción</th>
+                <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest">Permisos Activos</th>
+                <th className="px-4 py-3 border-b-4 border-[var(--pos-brutal-fg)] tracking-widest text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loadingRoles && <tr><td colSpan={4} className="p-4 text-center text-gray-500">Cargando...</td></tr>}
+            <tbody className="divide-y-0">
+              {loadingRoles && <tr><td colSpan={4} className="p-4 text-center font-bold uppercase text-[var(--pos-brutal-fg)]">Cargando...</td></tr>}
               {roles?.map((r: any) => (
-                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900 flex items-center gap-2">
+                <tr key={r.id} className="hover:bg-[var(--pos-brutal-accent)] transition-colors border-b-2 border-[var(--pos-brutal-fg)]">
+                  <td className="px-4 py-3 font-black text-[var(--pos-brutal-fg)] flex items-center gap-2">
                     {r.name}
-                    {r.isSystem && <span className="text-[10px] bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded-sm uppercase font-bold tracking-wider">Sistema</span>}
+                    {r.isSystem && <span className="text-[10px] bg-[var(--pos-brutal-fg)] text-[var(--pos-brutal-panel)] border-2 border-[var(--pos-brutal-fg)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)] px-1.5 py-0.5 rounded-none uppercase font-black">Sistema</span>}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{r.description || '-'}</td>
-                  <td className="px-4 py-3 text-gray-500">{r.permissions?.length} permisos</td>
+                  <td className="px-4 py-3 font-bold text-[var(--pos-brutal-fg)]">{r.description || '-'}</td>
+                  <td className="px-4 py-3 font-bold text-[var(--pos-brutal-fg)]">{r.permissions?.length} permisos</td>
                   <td className="px-4 py-3 text-right">
                     <RoleFormModal role={r} trigger={
-                      <button className="text-gray-400 hover:text-brand-600 p-1 rounded-md transition-colors disabled:opacity-30 disabled:hover:text-gray-400" disabled={r.isSystem}>
-                        <Edit className="w-4 h-4" />
+                      <button className="text-[var(--pos-brutal-fg)] hover:bg-[var(--pos-brutal-fg)] hover:text-white p-2 border-2 border-transparent hover:border-[var(--pos-brutal-fg)] rounded-none transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--pos-brutal-fg)] disabled:hover:border-transparent" disabled={r.isSystem}>
+                        <Edit className="w-5 h-5" strokeWidth={2.5} />
                       </button>
                     } />
                   </td>

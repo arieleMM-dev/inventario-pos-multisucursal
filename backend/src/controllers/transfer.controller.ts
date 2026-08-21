@@ -41,12 +41,19 @@ export const getTransfers = async (req: Request, res: Response) => {
         product: { select: { name: true, sku: true } },
         originBranch: { select: { name: true } },
         destinationBranch: { select: { name: true } },
-        createdBy: { select: { name: true } }
+        createdBy: { select: { firstName: true, lastName: true } }
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    return sendSuccess(res, transfers);
+    const formattedTransfers = transfers.map(t => ({
+      ...t,
+      createdBy: {
+        name: `${t.createdBy.firstName} ${t.createdBy.lastName}`
+      }
+    }));
+
+    return sendSuccess(res, formattedTransfers);
   } catch (error) {
     console.error('Error getTransfers:', error);
     return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al obtener transferencias', 500);

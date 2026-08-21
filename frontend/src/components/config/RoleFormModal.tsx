@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 const formSchema = z.object({
   name: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
   description: z.string().optional(),
-  permissions: z.array(z.string()).min(1, "Debe seleccionar al menos un permiso"),
+  permissions: z.array(z.string()).optional().default([]),
 });
 
 export function RoleFormModal({ role, trigger }: any) {
@@ -100,8 +100,8 @@ export function RoleFormModal({ role, trigger }: any) {
       <DialogTrigger
         render={
           (trigger as React.ReactElement) || (
-            <button className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-              <Plus className="w-4 h-4" />
+            <button className="flex items-center gap-2 bg-[var(--pos-brutal-panel)] hover:bg-[var(--pos-brutal-accent)] text-[var(--pos-brutal-fg)] border-2 border-[var(--pos-brutal-fg)] font-black uppercase shadow-[4px_4px_0_0_var(--pos-brutal-fg)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all duration-150 rounded-none px-5 py-2.5 text-sm cursor-pointer">
+              <Plus className="w-5 h-5" />
               Nuevo Rol
             </button>
           )
@@ -153,8 +153,8 @@ export function RoleFormModal({ role, trigger }: any) {
                   type="button"
                   onClick={() => setActiveTab('permissions')}
                   className={cn(
-                    "pb-2 px-1 text-sm font-medium transition-colors border-b-2",
-                    activeTab === 'permissions' ? "border-brand-500 text-brand-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                    "px-4 py-2 text-sm font-black uppercase transition-colors border-2 rounded-none",
+                    activeTab === 'permissions' ? "border-[var(--pos-brutal-fg)] bg-[var(--pos-brutal-primary)] text-white shadow-[4px_4px_0_0_var(--pos-brutal-fg)]" : "border-transparent text-[var(--pos-brutal-fg)] hover:border-[var(--pos-brutal-fg)] hover:shadow-[4px_4px_0_0_var(--pos-brutal-fg)]"
                   )}
                 >
                   Permisos
@@ -163,8 +163,8 @@ export function RoleFormModal({ role, trigger }: any) {
                   type="button"
                   onClick={() => setActiveTab('users')}
                   className={cn(
-                    "pb-2 px-1 text-sm font-medium transition-colors border-b-2",
-                    activeTab === 'users' ? "border-brand-500 text-brand-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                    "px-4 py-2 text-sm font-black uppercase transition-colors border-2 rounded-none",
+                    activeTab === 'users' ? "border-[var(--pos-brutal-fg)] bg-[var(--pos-brutal-primary)] text-white shadow-[4px_4px_0_0_var(--pos-brutal-fg)]" : "border-transparent text-[var(--pos-brutal-fg)] hover:border-[var(--pos-brutal-fg)] hover:shadow-[4px_4px_0_0_var(--pos-brutal-fg)]"
                   )}
                 >
                   Asignación de Usuarios
@@ -172,81 +172,83 @@ export function RoleFormModal({ role, trigger }: any) {
               </div>
             )}
 
-            <div className={activeTab === 'permissions' ? 'block' : 'hidden'}>
-              <h3 className="font-semibold text-gray-900 mb-3 border-b border-gray-100 pb-2">Matriz de Permisos</h3>
-              {permissionsLoading ? (
-                <div className="flex justify-center items-center p-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
-                </div>
-              ) : (
-                <FormField
-                control={form.control}
-                name="permissions"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="space-y-4">
-                      {groupedPermissions && Object.entries(groupedPermissions).map(([module, perms]: any) => (
-                        <div key={module} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                          <div className="flex justify-between items-center mb-3">
-                            <h4 className="font-medium text-brand-700">{module}</h4>
-                            <div className="flex gap-2 text-xs">
-                              <button
-                                type="button"
-                                className="text-brand-600 hover:underline"
-                                onClick={() => {
-                                  const modulePermIds = perms.map((p: any) => p.id);
-                                  const current = field.value || [];
-                                  const newValues = Array.from(new Set([...current, ...modulePermIds]));
-                                  field.onChange(newValues);
-                                }}
-                              >
-                                Seleccionar Todos
-                              </button>
-                              <span className="text-gray-300">|</span>
-                              <button
-                                type="button"
-                                className="text-gray-500 hover:underline"
-                                onClick={() => {
-                                  const modulePermIds = perms.map((p: any) => p.id);
-                                  const current = field.value || [];
-                                  const newValues = current.filter((id: string) => !modulePermIds.includes(id));
-                                  field.onChange(newValues);
-                                }}
-                              >
-                                Deseleccionar Todos
-                              </button>
+            {role && (
+              <div className={activeTab === 'permissions' ? 'block' : 'hidden'}>
+                <h3 className="font-black uppercase tracking-tighter text-xl text-[var(--pos-brutal-fg)] mb-3 border-b-4 border-[var(--pos-brutal-fg)] pb-2">Matriz de Permisos</h3>
+                {permissionsLoading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+                  </div>
+                ) : (
+                  <FormField
+                  control={form.control}
+                  name="permissions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="space-y-4">
+                        {groupedPermissions && Object.entries(groupedPermissions).map(([module, perms]: any) => (
+                          <div key={module} className="bg-[var(--pos-brutal-bg)] p-4 rounded-none border-2 border-[var(--pos-brutal-fg)] shadow-[4px_4px_0_0_var(--pos-brutal-fg)]">
+                            <div className="flex justify-between items-center mb-3">
+                              <h4 className="font-black uppercase tracking-tighter text-[var(--pos-brutal-fg)]">{module}</h4>
+                              <div className="flex gap-2 text-xs font-bold uppercase">
+                                <button
+                                  type="button"
+                                  className="text-[var(--pos-brutal-primary)] hover:underline"
+                                  onClick={() => {
+                                    const modulePermIds = perms.map((p: any) => p.id);
+                                    const current = field.value || [];
+                                    const newValues = Array.from(new Set([...current, ...modulePermIds]));
+                                    field.onChange(newValues);
+                                  }}
+                                >
+                                  Seleccionar Todos
+                                </button>
+                                <span className="text-[var(--pos-brutal-fg)]">|</span>
+                                <button
+                                  type="button"
+                                  className="text-[var(--pos-brutal-fg)] hover:underline"
+                                  onClick={() => {
+                                    const modulePermIds = perms.map((p: any) => p.id);
+                                    const current = field.value || [];
+                                    const newValues = current.filter((id: string) => !modulePermIds.includes(id));
+                                    field.onChange(newValues);
+                                  }}
+                                >
+                                  Deseleccionar Todos
+                                </button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {perms.map((p: any) => (
+                                <label key={p.id} className="flex items-start gap-2 cursor-pointer group">
+                                  <input
+                                    type="checkbox"
+                                    className="mt-1 rounded-none border-2 border-[var(--pos-brutal-fg)] text-[var(--pos-brutal-primary)] focus:ring-0 shadow-[2px_2px_0_0_var(--pos-brutal-fg)]"
+                                    checked={field.value?.includes(p.id)}
+                                    onChange={(e) => {
+                                      const val = e.target.checked
+                                        ? [...(field.value || []), p.id]
+                                        : field.value?.filter((id: string) => id !== p.id);
+                                      field.onChange(val);
+                                    }}
+                                  />
+                                  <div>
+                                    <div className="text-sm font-black uppercase text-[var(--pos-brutal-fg)] transition-colors">{p.code}</div>
+                                    <div className="text-xs font-bold text-[var(--pos-brutal-fg)]/70">{p.description}</div>
+                                  </div>
+                                </label>
+                              ))}
                             </div>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {perms.map((p: any) => (
-                              <label key={p.id} className="flex items-start gap-2 cursor-pointer group">
-                                <input
-                                  type="checkbox"
-                                  className="mt-1 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                                  checked={field.value?.includes(p.id)}
-                                  onChange={(e) => {
-                                    const val = e.target.checked
-                                      ? [...(field.value || []), p.id]
-                                      : field.value?.filter((id: string) => id !== p.id);
-                                    field.onChange(val);
-                                  }}
-                                />
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900 group-hover:text-brand-600 transition-colors">{p.code}</div>
-                                  <div className="text-xs text-gray-500">{p.description}</div>
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 )}
-              />
-              )}
-            </div>
+              </div>
+            )}
 
             {role && (
               <div className={activeTab === 'users' ? 'block' : 'hidden'}>
@@ -307,7 +309,7 @@ export function RoleFormModal({ role, trigger }: any) {
               <button 
                 type="submit" 
                 disabled={form.formState.isSubmitting}
-                className="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                className="bg-[var(--pos-brutal-panel)] hover:bg-[var(--pos-brutal-accent)] text-[var(--pos-brutal-fg)] border-2 border-[var(--pos-brutal-fg)] font-black uppercase shadow-[4px_4px_0_0_var(--pos-brutal-fg)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all duration-150 rounded-none px-6 py-2.5 text-sm cursor-pointer disabled:opacity-50"
               >
                 {form.formState.isSubmitting ? "Guardando..." : "Guardar Rol"}
               </button>

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProducts, createProduct, updateProduct, deleteProduct, getProductStock, adjustStock } from '../controllers/product.controller';
+import { getProducts, createProduct, updateProduct, deleteProduct, getProductStock, adjustStock, getCategories, getNextSku } from '../controllers/product.controller';
 import { requireAuth, requirePermission, requireBranchAccess } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -8,6 +8,10 @@ const router = Router();
 router.post('/', requireAuth, requirePermission('inventory.create_product'), createProduct);
 router.put('/:id', requireAuth, requirePermission('inventory.create_product'), updateProduct);
 router.delete('/:id', requireAuth, requirePermission('inventory.create_product'), deleteProduct);
+
+// Rutas para categorías y SKU
+router.get('/categories', requireAuth, getCategories);
+router.get('/next-sku', requireAuth, getNextSku);
 
 // Endpoint para consultar el catálogo general.
 // Requiere branchId (lo valida requireBranchAccess según BR-09, BR-10)

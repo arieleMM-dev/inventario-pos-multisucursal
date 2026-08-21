@@ -242,3 +242,54 @@ export const adjustStock = async (req: Request, res: Response) => {
     return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al ajustar el stock', 500);
   }
 };
+
+export const getCategories = async (req: Request, res: Response) => {
+  try {
+    const categories = await prisma.product.findMany({
+      where: { isActive: true },
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' }
+    });
+    
+    return sendSuccess(res, categories.map(c => c.category));
+  } catch (error) {
+    console.error('Error en getCategories:', error);
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al obtener categorías', 500);
+  }
+};
+
+export const getNextSku = async (req: Request, res: Response) => {
+  try {
+    const category = req.query.category as string;
+    if (!category || category.length < 3) {
+      return sendError(res, 'BAD_REQUEST', 'Categoría inválida o muy corta (mínimo 3 letras)', 400);
+    }
+    
+    const prefix = category.substring(0, 3).toUpperCase();
+    
+    const products = await prisma.product.findMany({
+      where: { sku: { startsWith: `${prefix}-` } },
+      select: { sku: true }
+    });
+    
+    let maxNumber = 0;
+    for (const p of products) {
+      const parts = p.sku.split('-');
+      if (parts.length === 2) {
+        const num = parseInt(parts[1], 10);
+        if (!isNaN(num) && num > maxNumber) {
+          maxNumber = num;
+        }
+      }
+    }
+    
+    const nextNumber = maxNumber + 1;
+    const nextSku = `${prefix}-${String(nextNumber).padStart(3, '0')}`;
+    
+    return sendSuccess(res, { sku: nextSku });
+  } catch (error) {
+    console.error('Error en getNextSku:', error);
+    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al calcular siguiente SKU', 500);
+  }
+};

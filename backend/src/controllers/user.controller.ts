@@ -5,9 +5,10 @@ import * as argon2 from 'argon2';
 import { z } from 'zod';
 
 const userSchema = z.object({
-  name: z.string().min(1, "Nombre es requerido"),
+  firstName: z.string().regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo letras y espacios permitidos").min(1, "Nombre es requerido"),
+  lastName: z.string().regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo letras y espacios permitidos").min(1, "Apellido es requerido"),
   email: z.string().email("Correo inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").optional(),
+  password: z.string().regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, "Mínimo 8 caracteres, 1 mayúscula, 1 número y 1 especial").optional(),
   roleId: z.string().uuid("Rol inválido"),
   branchId: z.string().uuid("Sucursal inválida").optional().nullable()
 });
@@ -55,7 +56,8 @@ export const createUser = async (req: Request, res: Response) => {
     const hash = await argon2.hash(result.data.password);
     const user = await prisma.user.create({
       data: {
-        name: result.data.name,
+        firstName: result.data.firstName,
+        lastName: result.data.lastName,
         email: result.data.email,
         passwordHash: hash,
         roleId: result.data.roleId,
@@ -84,7 +86,8 @@ export const updateUser = async (req: Request, res: Response) => {
     if (emailCheck && emailCheck.id !== id) return sendError(res, 'CONFLICT', 'El correo ya está en uso', 409);
 
     const dataToUpdate: any = {
-      name: result.data.name,
+      firstName: result.data.firstName,
+      lastName: result.data.lastName,
       email: result.data.email,
       roleId: result.data.roleId,
       branchId: result.data.branchId
@@ -137,7 +140,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     const updated = await prisma.user.update({
       where: { id: userId },
       data: result.data,
-      select: { id: true, name: true, email: true, phone: true, avatar: true, role: { select: { name: true } } }
+      select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, role: { select: { name: true } } }
     });
 
     return sendSuccess(res, updated);

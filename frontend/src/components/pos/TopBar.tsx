@@ -25,25 +25,25 @@ export function TopBar() {
   const canGoBack = user?.role === 'ADMIN' || user?.role === 'ENCARGADO';
 
   return (
-    <div className="h-16 bg-white border-b border-[var(--color-gray-200)] flex items-center justify-between px-4 sm:px-6 z-10 shadow-sm">
+    <div className="h-16 bg-[var(--pos-brutal-bg)] border-b-4 border-[var(--pos-brutal-fg)] flex items-center justify-between px-4 sm:px-6 z-10">
       <div className="flex items-center space-x-4">
         {canGoBack && (
           <button 
             onClick={() => router.push('/')}
-            className="flex items-center text-[var(--color-gray-500)] hover:text-[var(--color-brand-500)] transition-colors mr-2"
+            className="flex items-center text-[var(--pos-brutal-fg)] font-black uppercase tracking-tighter hover:bg-[var(--pos-brutal-fg)] hover:text-[var(--pos-brutal-panel)] px-3 py-1.5 transition-colors mr-2 border-2 border-[var(--pos-brutal-fg)] rounded-none shadow-[2px_2px_0_0_var(--pos-brutal-fg)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
-            <ArrowLeft size={20} className="mr-1" />
-            <span className="font-medium hidden sm:inline">Dashboard</span>
+            <ArrowLeft size={20} strokeWidth={2.5} className="mr-1" />
+            <span className="hidden sm:inline">Dashboard</span>
           </button>
         )}
         
         <div className="flex items-center">
-          <span className="text-[var(--color-gray-500)] mr-2 font-medium">Sucursal:</span>
+          <span className="text-[var(--pos-brutal-fg)] mr-2 font-black uppercase tracking-tighter hidden sm:inline">Sucursal:</span>
           {user?.role === 'ADMIN' ? (
             <select 
               value={selectedBranchId}
               onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="bg-[var(--color-gray-50)] border border-[var(--color-gray-300)] text-[var(--color-gray-900)] rounded-md py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]"
+              className="bg-[var(--pos-brutal-panel)] border-2 border-[var(--pos-brutal-fg)] text-[var(--pos-brutal-fg)] font-black uppercase rounded-none py-1.5 px-3 focus:outline-none focus:shadow-[4px_4px_0_0_var(--pos-brutal-fg)] transition-shadow shadow-[2px_2px_0_0_var(--pos-brutal-fg)]"
             >
               <option value="" disabled>Seleccione...</option>
               {branches.map(b => (
@@ -51,7 +51,7 @@ export function TopBar() {
               ))}
             </select>
           ) : (
-            <span className="font-semibold text-[var(--color-gray-900)]">
+            <span className="font-black text-[var(--pos-brutal-fg)] uppercase px-3 py-1.5 border-2 border-[var(--pos-brutal-fg)] bg-[var(--pos-brutal-panel)] shadow-[2px_2px_0_0_var(--pos-brutal-fg)]">
               {branches.find(b => b.id === selectedBranchId)?.name || 'Cargando...'}
             </span>
           )}
@@ -60,15 +60,15 @@ export function TopBar() {
 
       <div className="flex items-center space-x-4">
         <div className="text-right hidden sm:block">
-          <div className="text-sm font-semibold text-[var(--color-gray-900)]">{user?.name}</div>
-          <div className="text-xs text-[var(--color-gray-500)]">{user?.role}</div>
+          <div className="text-sm font-black text-[var(--pos-brutal-fg)] uppercase tracking-tighter">{user?.name}</div>
+          <div className="text-[10px] text-[var(--pos-brutal-fg)] font-black uppercase">{user?.role}</div>
         </div>
         <button 
           onClick={logout}
-          className="p-2 text-[var(--color-gray-500)] hover:text-[var(--color-danger-text)] transition-colors"
+          className="p-2 text-[var(--pos-brutal-panel)] bg-[var(--pos-brutal-fg)] hover:bg-black transition-colors border-2 border-transparent rounded-none"
           title="Cerrar sesión"
         >
-          <LogOut size={20} />
+          <LogOut size={20} strokeWidth={2.5} />
         </button>
       </div>
     </div>
