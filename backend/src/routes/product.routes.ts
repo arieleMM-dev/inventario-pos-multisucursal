@@ -1,16 +1,16 @@
 import { Router } from 'express';
-import { getProducts, createProduct, updateProduct, deleteProduct, getProductStock, adjustStock, getCategories, getNextSku } from '../controllers/product.controller';
+import { getProducts, createProduct, updateProduct, deleteProduct, getProductStock, adjustStock, getNextSku } from '../controllers/product.controller';
 import { requireAuth, requirePermission, requireBranchAccess } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 // Endpoint para crear productos: Solo permitido para el rol ADMIN
-router.post('/', requireAuth, requirePermission('inventory.create_product'), createProduct);
-router.put('/:id', requireAuth, requirePermission('inventory.create_product'), updateProduct);
-router.delete('/:id', requireAuth, requirePermission('inventory.create_product'), deleteProduct);
+router.post('/', requireAuth, requirePermission('INVENTORY_CREATE_PRODUCT'), createProduct);
+router.put('/:id', requireAuth, requirePermission('INVENTORY_CREATE_PRODUCT'), updateProduct);
+router.delete('/:id', requireAuth, requirePermission('INVENTORY_DELETE'), deleteProduct);
 
 // Rutas para categorías y SKU
-router.get('/categories', requireAuth, getCategories);
+
 router.get('/next-sku', requireAuth, getNextSku);
 
 // Endpoint para consultar el catálogo general.

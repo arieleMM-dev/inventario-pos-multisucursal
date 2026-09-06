@@ -25,20 +25,32 @@ enum MovementType {
   AJUSTE
 }
 
+enum UnitOfMeasure {
+  UNIDAD
+  KILOGRAMO
+  LITRO
+  CAJA
+}
+
 model Branch {
   id       String  @id @default(uuid())
+  code     String  @unique
   name     String
+  taxId    String?
   address  String?
+  phone    String?
+  email    String?
+  timezone String  @default("UTC")
   isActive Boolean @default(true)
 
-  users          User[]
-  stocks         BranchStock[]
-  movements      StockMovement[]
-  sales          Sale[]
-  transfersOut   StockTransfer[] @relation("OriginBranch")
-  transfersIn    StockTransfer[] @relation("DestinationBranch")
-  purchaseOrders PurchaseOrder[]
-  cashSessions   CashSession[]
+  users              User[]
+  inventories        Inventory[]
+  inventoryMovements InventoryMovement[]
+  sales              Sale[]
+  transfersOut       StockTransfer[] @relation("OriginBranch")
+  transfersIn        StockTransfer[] @relation("DestinationBranch")
+  purchaseOrders     PurchaseOrder[]
+  cashSessions       CashSession[]
 }
 
 model Permission {
@@ -78,18 +90,22 @@ model User {
   lastName     String
   phone        String?
   avatar       String?
+  lastLogin    DateTime?
   isActive     Boolean @default(true)
   
-  roleId       String
-  role         Role   @relation(fields: [roleId], references: [id])
+  sessions     UserSessionLog[]
+  
+  roleId       String?
+  role         Role?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
 
   branchId String?
-  branch   Branch? @relation(fields: [branchId], references: [id])
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
-  movements        StockMovement[]
-  sales            Sale[]
-  transfersCreated StockTransfer[]
-  cashSessions     CashSession[]
+  inventoryMovements InventoryMovement[]
+  sales              Sale[]
+  transfersCreated   StockTransfer[]
+  cashSessions       CashSession[]
+  otpTokens          OtpToken[]
 }
 
 model CashSession {
@@ -107,6 +123,16 @@ model CashSession {
   sales   Sale[]
 }
 
+model UserSessionLog {
+  id        String   @id @default(uuid())
+  userId    String
+  loginAt   DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Client {
   id        String  @id @default(uuid())
   firstName String
@@ -116,35 +142,52 @@ model Client {
   sales    Sale[]
 }
 
-model Product {
-  id       String  @id @default(uuid())
-  sku      String  @unique
-  name     String
-  category String
-  price    Float
-  minStock Int
-  isActive Boolean @default(true)
-
-  stocks        BranchStock[]
-  movements     StockMovement[]
-  saleItems     SaleItem[]
-  transfers     StockTransfer[]
-  purchaseItems PurchaseOrderItem[]
+model Category {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  parentId  String?
+  
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Category[] @relation("CategoryHierarchy")
+  products  Product[]
 }
 
-model BranchStock {
+model Product {
+  id             String        @id @default(uuid())
+  sku            String        @unique
+  barcode        String?       @unique
+  name           String
+  description    String?
+  categoryId     String?
+  category       Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  costPrice      Float
+  sellingPrice   Float
+  unitOfMeasure  UnitOfMeasure @default(UNIDAD)
+  isTracked      Boolean       @default(true)
+  isActive       Boolean       @default(true)
+
+  inventories        Inventory[]
+  inventoryMovements InventoryMovement[]
+  saleItems          SaleItem[]
+  transfers          StockTransfer[]
+  purchaseItems      PurchaseOrderItem[]
+}
+
+model Inventory {
   id        String @id @default(uuid())
   productId String
   branchId  String
   quantity  Int    @default(0)
+  minStock  Int    @default(0)
+  maxStock  Int?
 
-  product Product @relation(fields: [productId], references: [id])
-  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   @@unique([productId, branchId])
 }
 
-model StockMovement {
+model InventoryMovement {
   id            String       @id @default(uuid())
   productId     String
   branchId      String
@@ -153,12 +196,13 @@ model StockMovement {
   previousStock Int?
   newStock      Int?
   referenceId   String?
+  reason        String?
   createdById   String
   createdAt     DateTime     @default(now())
 
-  product   Product @relation(fields: [productId], references: [id])
-  branch    Branch  @relation(fields: [branchId], references: [id])
-  createdBy User    @relation(fields: [createdById], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  branch    Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdBy User    @relation(fields: [createdById], references: [id], onDelete: Restrict)
 }
 
 model Sale {
@@ -175,8 +219,8 @@ model Sale {
 
   branch      Branch       @relation(fields: [branchId], references: [id])
   cashier     User         @relation(fields: [cashierId], references: [id])
-  cashSession CashSession? @relation(fields: [cashSessionId], references: [id])
-  client      Client?      @relation(fields: [clientId], references: [id])
+  cashSession CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
+  client      Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
   items       SaleItem[]
 }
 
@@ -249,4 +293,14 @@ model PurchaseOrderItem {
 
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
   product       Product       @relation(fields: [productId], references: [id])
+}
+
+model OtpToken {
+  id        String   @id @default(uuid())
+  userId    String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

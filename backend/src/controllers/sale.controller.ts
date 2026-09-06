@@ -31,23 +31,6 @@ export const createSale = async (req: Request, res: Response) => {
       const stockMovementData: any[] = [];
 
       for (const item of items) {
-        // Bloqueo Optimista: Usamos queryRaw para poder obtener el 'quantity' actualizado (RETURNING)
-        const updateResult: any[] = await tx.$queryRaw`
-          UPDATE "BranchStock"
-          SET quantity = quantity - ${item.quantity}
-          WHERE "productId" = ${item.productId}
-            AND "branchId" = ${branchId}
-            AND quantity >= ${item.quantity}
-          RETURNING quantity
-        `;
-
-        if (updateResult.length === 0) {
-          throw new Error(`INSUFFICIENT_STOCK:${item.productId}`);
-        }
-
-        const newQuantity = updateResult[0].quantity;
-        const previousQuantity = newQuantity + item.quantity;
-
         const product = await tx.product.findUnique({
           where: { id: item.productId }
         });
@@ -59,35 +42,59 @@ export const createSale = async (req: Request, res: Response) => {
         saleItemsData.push({
           productId: item.productId,
           quantity: item.quantity,
-          unitPrice: product.price
+          unitPrice: product.sellingPrice
         });
         
-        total += product.price * item.quantity;
+        total += product.sellingPrice * item.quantity;
 
-        stockMovementData.push({
-          productId: item.productId,
-          branchId,
-          type: 'VENTA',
-          quantity: -item.quantity,
-          previousStock: previousQuantity,
-          newStock: newQuantity,
-          createdById: cashierId
-        });
+        if (product.isTracked) {
+          // Bloqueo Optimista: Usamos queryRaw para poder obtener el 'quantity' actualizado (RETURNING)
+          const updateResult: any[] = await tx.$queryRaw`
+            UPDATE "Inventory"
+            SET quantity = quantity - ${item.quantity}
+            WHERE "productId" = ${item.productId}
+              AND "branchId" = ${branchId}
+              AND quantity >= ${item.quantity}
+            RETURNING quantity
+          `;
 
-        const status = getProductStatus(newQuantity, product.minStock);
+          if (updateResult.length === 0) {
+            throw new Error(`INSUFFICIENT_STOCK:${item.productId}`);
+          }
 
-        // Preparamos evento stock:updated
-        eventsToEmit.push({
-          type: 'stock:updated',
-          payload: { productId: item.productId, branchId, newQuantity, status }
-        });
+          const newQuantity = updateResult[0].quantity;
+          const previousQuantity = newQuantity + item.quantity;
 
-        // Regla BR-07: Emitir stock:low SOLO cuando cruza el umbral (de arriba hacia abajo)
-        if (previousQuantity > product.minStock && newQuantity <= product.minStock) {
-          eventsToEmit.push({
-            type: 'stock:low',
-            payload: { productId: item.productId, branchId, currentQuantity: newQuantity, minStock: product.minStock }
+          const inventory = await tx.inventory.findUnique({
+            where: { productId_branchId: { productId: item.productId, branchId } }
           });
+          const minStock = inventory?.minStock || 0;
+
+          stockMovementData.push({
+            productId: item.productId,
+            branchId,
+            type: 'VENTA',
+            quantity: -item.quantity,
+            previousStock: previousQuantity,
+            newStock: newQuantity,
+            createdById: cashierId
+          });
+
+          const status = getProductStatus(newQuantity, minStock);
+
+          // Preparamos evento stock:updated
+          eventsToEmit.push({
+            type: 'stock:updated',
+            payload: { productId: item.productId, branchId, newQuantity, status }
+          });
+
+          // Regla BR-07: Emitir stock:low SOLO cuando cruza el umbral (de arriba hacia abajo)
+          if (previousQuantity > minStock && newQuantity <= minStock) {
+            eventsToEmit.push({
+              type: 'stock:low',
+              payload: { productId: item.productId, branchId, currentQuantity: newQuantity, minStock: minStock }
+            });
+          }
         }
       }
 
@@ -116,7 +123,7 @@ export const createSale = async (req: Request, res: Response) => {
       });
 
       for (const smData of stockMovementData) {
-        await tx.stockMovement.create({
+        await tx.inventoryMovement.create({
           data: {
             ...smData,
             referenceId: createdSale.id

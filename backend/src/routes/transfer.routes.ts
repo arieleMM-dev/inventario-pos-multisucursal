@@ -9,7 +9,7 @@ const router = Router();
 // por tanto requireRole filtra para excluir a CAJERO.
 
 router.get('/', requireAuth, getTransfers);
-router.post('/', requireAuth, requirePermission('transfers.create'), createTransfer);
-router.patch('/:id/status', requireAuth, requirePermission('transfers.receive'), updateTransferStatus);
+router.post('/', requireAuth, requirePermission('TRANSFERS_CREATE'), createTransfer);
+router.patch('/:id/status', requireAuth, requirePermission('TRANSFERS_RECEIVE'), updateTransferStatus);
 
 export default router;

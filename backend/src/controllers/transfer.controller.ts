@@ -81,7 +81,7 @@ export const createTransfer = async (req: Request, res: Response) => {
     }
 
     // Validar que la cantidad no exceda el stock actual al momento de CREAR
-    const originStock = await prisma.branchStock.findUnique({
+    const originStock = await prisma.inventory.findUnique({
       where: { productId_branchId: { productId, branchId: originBranchId } }
     });
 
@@ -138,7 +138,7 @@ export const updateTransferStatus = async (req: Request, res: Response) => {
       // BR-04: Descontar stock de origen en la transición a EN_TRANSITO
       const updatedTransfer = await prisma.$transaction(async (tx) => {
         const updateResult: any[] = await tx.$queryRaw`
-          UPDATE "BranchStock"
+          UPDATE "Inventory"
           SET quantity = quantity - ${transfer.quantity}
           WHERE "productId" = ${transfer.productId}
             AND "branchId" = ${transfer.originBranchId}
@@ -153,7 +153,7 @@ export const updateTransferStatus = async (req: Request, res: Response) => {
         const newStock = updateResult[0].quantity;
         const previousStock = newStock + transfer.quantity;
 
-        await tx.stockMovement.create({
+        await tx.inventoryMovement.create({
           data: {
             productId: transfer.productId,
             branchId: transfer.originBranchId,
@@ -196,20 +196,20 @@ export const updateTransferStatus = async (req: Request, res: Response) => {
       // Implementación estricta de sección 5.2 de la documentación
       const updatedTransfer = await prisma.$transaction(async (tx) => {
         // Obtenemos el stock previo o creamos si no existe
-        const branchStock = await tx.branchStock.upsert({
+        const inventory = await tx.inventory.upsert({
           where: { productId_branchId: { productId: transfer.productId, branchId: transfer.destinationBranchId } },
           update: { quantity: { increment: transfer.quantity } },
           create: { productId: transfer.productId, branchId: transfer.destinationBranchId, quantity: transfer.quantity }
         });
 
-        await tx.stockMovement.create({
+        await tx.inventoryMovement.create({
           data: {
             productId: transfer.productId,
             branchId: transfer.destinationBranchId,
             type: 'TRANSFERENCIA_ENTRADA',
             quantity: transfer.quantity,
-            previousStock: branchStock.quantity - transfer.quantity,
-            newStock: branchStock.quantity,
+            previousStock: inventory.quantity - transfer.quantity,
+            newStock: inventory.quantity,
             referenceId: transfer.id,
             createdById: userId
           }
@@ -231,7 +231,7 @@ export const updateTransferStatus = async (req: Request, res: Response) => {
       // BR-05: Si se cancela, el stock regresa a la sucursal de origen
       const updatedTransfer = await prisma.$transaction(async (tx) => {
         const updateResult: any[] = await tx.$queryRaw`
-          UPDATE "BranchStock"
+          UPDATE "Inventory"
           SET quantity = quantity + ${transfer.quantity}
           WHERE "productId" = ${transfer.productId}
             AND "branchId" = ${transfer.originBranchId}
@@ -241,7 +241,7 @@ export const updateTransferStatus = async (req: Request, res: Response) => {
         const newStock = updateResult[0].quantity;
         const previousStock = newStock - transfer.quantity;
 
-        await tx.stockMovement.create({
+        await tx.inventoryMovement.create({
           data: {
             productId: transfer.productId,
             branchId: transfer.originBranchId,

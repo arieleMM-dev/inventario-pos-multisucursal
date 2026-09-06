@@ -4,7 +4,7 @@ import { requireAuth, requirePermission } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-router.use(requireAuth, requirePermission('roles.manage'));
+router.use(requireAuth, requirePermission('ROLES_MANAGE'));
 
 router.get('/', getRoles);
 router.get('/permissions', getPermissions);

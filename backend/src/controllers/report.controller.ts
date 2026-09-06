@@ -15,7 +15,7 @@ export const getRotationReport = async (req: Request, res: Response) => {
     const fromDate = from ? new Date(from as string) : new Date(new Date().setDate(toDate.getDate() - 30));
 
     // Agrupar movimientos de VENTA por productId
-    const movements = await prisma.stockMovement.groupBy({
+    const movements = await prisma.inventoryMovement.groupBy({
       by: ['productId'],
       where: {
         branchId: branchId as string,
@@ -30,17 +30,17 @@ export const getRotationReport = async (req: Request, res: Response) => {
       }
     });
 
-    const productIds = movements.map(m => m.productId);
+    const productIds = movements.map((m: any) => m.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
-      select: { id: true, name: true, price: true }
+      select: { id: true, name: true, sellingPrice: true }
     });
 
-    const data = movements.map(m => {
+    const data = movements.map((m: any) => {
       const product = products.find(p => p.id === m.productId);
       // Movimientos de venta son negativos, los volvemos positivos para el reporte
       const unitsSold = Math.abs(m._sum.quantity || 0); 
-      const revenue = unitsSold * (product?.price || 0);
+      const revenue = unitsSold * (product?.sellingPrice || 0);
 
       return {
         productId: m.productId,
@@ -48,7 +48,7 @@ export const getRotationReport = async (req: Request, res: Response) => {
         unitsSold,
         revenue
       };
-    }).sort((a, b) => b.unitsSold - a.unitsSold); // Ordenar por más vendidos
+    }).sort((a: any, b: any) => b.unitsSold - a.unitsSold); // Ordenar por más vendidos
 
     return sendSuccess(res, data);
   } catch (error) {
@@ -67,20 +67,19 @@ export const getLowStockReport = async (req: Request, res: Response) => {
 
     // Obtenemos los stocks y los cruzamos con Product para evaluar contra minStock
     // En SQL puro sería un JOIN y WHERE quantity <= minStock
-    // Con Prisma podemos obtener los BranchStock y hacer el cruce en memoria si no son demasiados, 
-    // o usar queryRaw. Para este ejercicio, findMany con include.
-    const branchStocks = await prisma.branchStock.findMany({
+    // Con Prisma podemos obtener los Inventories y hacer el cruce en memoria
+    const inventories = await prisma.inventory.findMany({
       where: { branchId: branchId as string },
-      include: { product: { select: { name: true, minStock: true } } }
+      include: { product: { select: { name: true } } }
     });
 
-    const lowStockItems = branchStocks
-      .filter(bs => bs.quantity <= bs.product.minStock)
-      .map(bs => ({
+    const lowStockItems = inventories
+      .filter((bs: any) => bs.quantity <= bs.minStock)
+      .map((bs: any) => ({
         productId: bs.productId,
         name: bs.product.name,
         quantity: bs.quantity,
-        minStock: bs.product.minStock
+        minStock: bs.minStock
       }));
 
     return sendSuccess(res, lowStockItems);
@@ -97,12 +96,12 @@ export const getKPIs = async (req: Request, res: Response) => {
     const activeUsers = await prisma.user.count({ where: { isActive: true } });
     const totalBranches = await prisma.branch.count({ where: { isActive: true } });
 
-    const stocks = await prisma.branchStock.findMany({
+    const stocks = await prisma.inventory.findMany({
       where: branchId ? { branchId: String(branchId) } : {},
       include: { product: true }
     });
 
-    const totalStockValue = stocks.reduce((acc, stock) => acc + (stock.quantity * stock.product.price), 0);
+    const totalStockValue = stocks.reduce((acc: any, stock: any) => acc + (stock.quantity * stock.product.sellingPrice), 0);
 
     return sendSuccess(res, {
       activeUsers,

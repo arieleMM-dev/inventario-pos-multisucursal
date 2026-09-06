@@ -31,8 +31,8 @@ export const getClients = async (req: Request, res: Response) => {
 const createClientSchema = z.object({
   firstName: z.string().regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo letras y espacios permitidos").min(1, "El nombre es requerido"),
   lastName: z.string().regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo letras y espacios permitidos").min(1, "El apellido es requerido"),
-  email: z.string().email("Correo inválido").optional().or(z.literal("")),
-  document: z.string().optional().or(z.literal(""))
+  email: z.string().email("Correo inválido").optional().nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  document: z.string().optional().nullable().or(z.literal('')).transform(val => val === '' ? null : val)
 });
 
 export const createClient = async (req: Request, res: Response) => {

@@ -12,6 +12,7 @@ import userRoutes from './routes/user.routes';
 import clientRoutes from './routes/client.routes';
 import cashRoutes from './routes/cash.routes';
 import roleRoutes from './routes/role.routes';
+import categoryRoutes from './routes/category.routes';
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/cash-sessions', cashRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/transfers', transferRoutes);

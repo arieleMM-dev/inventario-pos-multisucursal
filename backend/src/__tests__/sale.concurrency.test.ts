@@ -13,14 +13,15 @@ describe('Motor de Ventas: Control de Concurrencia Optimista', () => {
   beforeAll(async () => {
     // 1. Crear una sucursal de prueba
     const branch = await prisma.branch.create({
-      data: { name: 'Sucursal Test Concurrencia', address: 'Test 123' }
+      data: { code: 'TEST_CONC', name: 'Sucursal Test Concurrencia', address: 'Test 123' }
     });
     testBranchId = branch.id;
 
     // 2. Crear un cajero asignado a la sucursal
     const user = await prisma.user.create({
       data: {
-        name: 'Cajero Test',
+        firstName: 'Cajero',
+        lastName: 'Test',
         email: `cajero_${Date.now()}@test.com`,
         passwordHash: 'dummy_hash', 
         role: {
@@ -39,19 +40,20 @@ describe('Motor de Ventas: Control de Concurrencia Optimista', () => {
       data: {
         sku: `SKU_${Date.now()}`,
         name: 'Producto de Prueba Concurrencia',
-        category: 'TEST',
-        price: 100,
-        minStock: 5
+        category: { connectOrCreate: { where: { name: 'TEST' }, create: { name: 'TEST' } } },
+        costPrice: 50,
+        sellingPrice: 100
       }
     });
     testProductId = product.id;
 
     // 4. Crear el stock inicial: Exactamente 10 unidades
-    await prisma.branchStock.create({
+    await prisma.inventory.create({
       data: {
         productId: testProductId,
         branchId: testBranchId,
-        quantity: 10
+        quantity: 10,
+        minStock: 5
       }
     });
 
@@ -93,13 +95,13 @@ describe('Motor de Ventas: Control de Concurrencia Optimista', () => {
     });
 
     // Verificamos el stock en la base de datos, ¡debe ser 0, nunca negativo!
-    const finalStock = await prisma.branchStock.findUnique({
+    const finalStock = await prisma.inventory.findUnique({
       where: { productId_branchId: { productId: testProductId, branchId: testBranchId } }
     });
     expect(finalStock?.quantity).toBe(0);
 
     // Verificamos que exactamente se generaron 10 movimientos de stock inmutables (BR-03)
-    const movements = await prisma.stockMovement.findMany({
+    const movements = await prisma.inventoryMovement.findMany({
       where: { productId: testProductId, branchId: testBranchId }
     });
     expect(movements.length).toBe(10);

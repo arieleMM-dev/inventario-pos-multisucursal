@@ -15,36 +15,48 @@ export const getProducts = async (req: Request, res: Response) => {
   try {
     const { branchId, category, lowStockOnly } = req.query;
 
-    if (!branchId) {
+    const hasGlobalRead = req.user?.isSuperAdmin || req.user?.permissions.includes('INVENTORY_READ_GLOBAL');
+    
+    // Si no tiene permiso global y no especifica sucursal, es un error (o forzamos su sucursal base)
+    if (!branchId && !hasGlobalRead) {
       return sendError(res, 'BAD_REQUEST', 'Debe enviar el parámetro branchId', 400);
     }
 
     const whereClause: any = { isActive: true };
     if (category) {
-      whereClause.category = String(category);
+      whereClause.categoryId = String(category);
     }
 
-    // Buscamos productos e incluimos el stock SÓLO para la sucursal pedida
+    // Buscamos productos e incluimos el stock
     const products = await prisma.product.findMany({
       where: whereClause,
       include: {
-        stocks: {
-          where: { branchId: String(branchId) }
-        }
+        category: true,
+        inventories: hasGlobalRead && !branchId 
+          ? { include: { branch: { select: { name: true } } } } // Retorna stock de todas las sucursales si no se filtró una
+          : { where: { branchId: String(branchId) } } // Retorna stock solo de la sucursal solicitada
       }
     });
 
     const mappedProducts = products.map((product: any) => {
-      const stockQuantity = product.stocks[0]?.quantity || 0;
+      // Si hay múltiples sucursales (global read), calculamos el stock total y agregamos el desglose
+      const totalStock = product.inventories.reduce((acc: number, curr: any) => acc + curr.quantity, 0);
+      const stockQuantity = (hasGlobalRead && !branchId) ? totalStock : (product.inventories[0]?.quantity || 0);
+      const minStock = product.inventories[0]?.minStock || 0;
       return {
         id: product.id,
         sku: product.sku,
+        barcode: product.barcode,
         name: product.name,
-        category: product.category,
-        price: product.price,
-        minStock: product.minStock,
+        category: product.category?.name || '-',
+        categoryId: product.categoryId,
+        costPrice: product.costPrice,
+        sellingPrice: product.sellingPrice,
+        minStock: minStock,
         stockInBranch: stockQuantity,
-        status: getProductStatus(stockQuantity, product.minStock),
+        isTracked: product.isTracked,
+        allStocks: hasGlobalRead ? product.inventories : undefined,
+        status: product.isTracked ? getProductStatus(stockQuantity, minStock) : 'NORMAL',
       };
     });
 
@@ -63,25 +75,79 @@ export const getProducts = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
+    console.log("=== CREATE PRODUCT PAYLOAD ===");
+    console.log(JSON.stringify(req.body, null, 2));
+    console.log("===============================");
+    
     const result = createProductSchema.safeParse(req.body);
     
     if (!result.success) {
-      return sendError(res, 'VALIDATION_ERROR', 'Datos de producto inválidos', 400, result.error.issues);
+      return sendError(res, 'VALIDATION_ERROR', 'Datos de producto inválidos', 400, result.error.issues.map(i => ({ field: String(i.path[0]), message: i.message })));
     }
 
-    const { sku, name, category, price, minStock } = result.data;
+    const { sku, name, categoryId, costPrice, sellingPrice, barcode, description, unitOfMeasure, isTracked, initialStock, branchId, minStock, maxStock } = result.data;
+    const userId = req.user!.userId;
 
-    const existingProduct = await prisma.product.findUnique({ where: { sku } });
-    if (existingProduct) {
-      return sendError(res, 'CONFLICT', 'El SKU ya está registrado', 409);
+    const issues = [];
+    
+    let finalSku = sku;
+    if (finalSku.endsWith('-')) {
+      const count = await prisma.product.count({ where: { categoryId } });
+      finalSku = `${finalSku}${(count + 1).toString().padStart(3, '0')}`;
     }
 
-    const newProduct = await prisma.product.create({
-      data: { sku, name, category, price, minStock }
+    const existingSku = await prisma.product.findUnique({ where: { sku: finalSku } });
+    if (existingSku) issues.push({ field: 'sku', message: 'El SKU ya está en uso' });
+
+    if (barcode) {
+      const existingBarcode = await prisma.product.findUnique({ where: { barcode } });
+      if (existingBarcode) issues.push({ field: 'barcode', message: 'El código de barras ya está registrado' });
+    }
+
+    if (initialStock && initialStock > 0 && !branchId) {
+      issues.push({ field: 'branchId', message: 'Se requiere la sucursal para definir el stock inicial' });
+    }
+
+    if (issues.length > 0) {
+      return sendError(res, 'VALIDATION_ERROR', 'Datos inválidos', 400, issues);
+    }
+
+    const newProduct = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: { sku: finalSku, name, categoryId, costPrice, sellingPrice, barcode, description, unitOfMeasure, isTracked }
+      });
+
+      if (initialStock && initialStock > 0 && branchId) {
+        await tx.inventory.create({
+          data: {
+            productId: product.id,
+            branchId,
+            quantity: initialStock,
+            minStock: minStock || 0,
+            maxStock: maxStock || null,
+          }
+        });
+
+        await tx.inventoryMovement.create({
+          data: {
+            productId: product.id,
+            branchId,
+            type: 'INGRESO',
+            quantity: initialStock,
+            previousStock: 0,
+            newStock: initialStock,
+            reason: 'Stock Inicial',
+            createdById: userId,
+          }
+        });
+      }
+
+      return product;
     });
 
     return sendSuccess(res, newProduct, 201);
   } catch (error) {
+    console.error(error);
     return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al crear producto', 500);
   }
 };
@@ -90,11 +156,26 @@ export const updateProduct = async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const result = createProductSchema.safeParse(req.body);
-    if (!result.success) return sendError(res, 'VALIDATION_ERROR', 'Datos inválidos', 400, result.error.issues);
+    if (!result.success) return sendError(res, 'VALIDATION_ERROR', 'Datos inválidos', 400, result.error.issues.map(i => ({ field: String(i.path[0]), message: i.message })));
     
+    const { sku, barcode, name, categoryId, costPrice, sellingPrice, description, unitOfMeasure, isTracked } = result.data;
+    const issues = [];
+
+    const existingSku = await prisma.product.findUnique({ where: { sku } });
+    if (existingSku && existingSku.id !== id) issues.push({ field: 'sku', message: 'El SKU ya está en uso por otro producto' });
+
+    if (barcode) {
+      const existingBarcode = await prisma.product.findUnique({ where: { barcode } });
+      if (existingBarcode && existingBarcode.id !== id) issues.push({ field: 'barcode', message: 'El código de barras ya está registrado en otro producto' });
+    }
+
+    if (issues.length > 0) {
+      return sendError(res, 'VALIDATION_ERROR', 'Datos duplicados', 400, issues);
+    }
+
     const product = await prisma.product.update({
       where: { id },
-      data: result.data
+      data: { sku, name, categoryId, costPrice, sellingPrice, barcode, description, unitOfMeasure, isTracked }
     });
     return sendSuccess(res, product);
   } catch (error) {
@@ -132,7 +213,7 @@ export const getProductStock = async (req: Request, res: Response) => {
       return sendError(res, 'NOT_FOUND', 'Producto no encontrado', 404);
     }
 
-    const branchStock = await prisma.branchStock.findUnique({
+    const inventory = await prisma.inventory.findUnique({
       where: {
         productId_branchId: {
           productId: String(id),
@@ -141,13 +222,14 @@ export const getProductStock = async (req: Request, res: Response) => {
       }
     });
 
-    const quantity = branchStock?.quantity || 0;
+    const quantity = inventory?.quantity || 0;
+    const minStock = inventory?.minStock || 0;
 
     return sendSuccess(res, {
       productId: product.id,
       branchId: String(branchId),
       quantity,
-      status: getProductStatus(quantity, product.minStock)
+      status: getProductStatus(quantity, minStock)
     });
   } catch (error) {
     console.error('Error en getProductStock:', error);
@@ -161,7 +243,7 @@ export const adjustStock = async (req: Request, res: Response) => {
     const result = adjustStockSchema.safeParse(req.body);
     
     if (!result.success) {
-      return sendError(res, 'VALIDATION_ERROR', 'Datos de ajuste inválidos', 400, result.error.issues);
+      return sendError(res, 'VALIDATION_ERROR', 'Datos de ajuste inválidos', 400, result.error.issues.map(i => ({ field: String(i.path[0]), message: i.message })));
     }
 
     const { branchId, adjustment, reason } = result.data;
@@ -177,44 +259,44 @@ export const adjustStock = async (req: Request, res: Response) => {
       return sendError(res, 'NOT_FOUND', 'Sucursal no encontrada', 404);
     }
 
-    // Usar transacción para actualizar stock y crear movimiento
     const updatedStock = await prisma.$transaction(async (tx) => {
-      let branchStock = await tx.branchStock.findUnique({
+      let inventory = await tx.inventory.findUnique({
         where: { productId_branchId: { productId: id, branchId } }
       });
 
-      const previousQuantity = branchStock?.quantity || 0;
+      const previousQuantity = inventory?.quantity || 0;
       const newQuantity = previousQuantity + adjustment;
 
       if (newQuantity < 0) {
         throw new Error('El ajuste resultaría en un stock negativo');
       }
 
-      branchStock = await tx.branchStock.upsert({
+      inventory = await tx.inventory.upsert({
         where: { productId_branchId: { productId: id, branchId } },
         update: { quantity: newQuantity },
         create: { productId: id, branchId, quantity: newQuantity }
       });
 
-      await tx.stockMovement.create({
+      await tx.inventoryMovement.create({
         data: {
           productId: id,
           branchId,
           type: 'AJUSTE',
-          quantity: Math.abs(adjustment), // Puede ser útil mantener el signo, pero quantity suele ser positivo. Guardaremos el cambio real en newQuantity y previousStock.
+          quantity: Math.abs(adjustment), 
           previousStock: previousQuantity,
           newStock: newQuantity,
-          referenceId: reason,
+          reason,
           createdById: userId,
         }
       });
 
-      return branchStock;
+      return inventory;
     });
 
     // Emitir evento de socket
     const io = getIO();
-    const status = getProductStatus(updatedStock.quantity, product.minStock);
+    const minStock = updatedStock.minStock;
+    const status = getProductStatus(updatedStock.quantity, minStock);
     
     io.to(`branch:${branchId}`).emit('stock:updated', {
       productId: id,
@@ -223,12 +305,12 @@ export const adjustStock = async (req: Request, res: Response) => {
       status
     });
 
-    if (updatedStock.quantity <= product.minStock) {
+    if (updatedStock.quantity <= minStock) {
       io.to(`branch:${branchId}`).emit('stock:low', {
         productId: id,
         branchId,
         currentQuantity: updatedStock.quantity,
-        minStock: product.minStock
+        minStock: minStock
       });
     }
 
@@ -243,21 +325,6 @@ export const adjustStock = async (req: Request, res: Response) => {
   }
 };
 
-export const getCategories = async (req: Request, res: Response) => {
-  try {
-    const categories = await prisma.product.findMany({
-      where: { isActive: true },
-      select: { category: true },
-      distinct: ['category'],
-      orderBy: { category: 'asc' }
-    });
-    
-    return sendSuccess(res, categories.map(c => c.category));
-  } catch (error) {
-    console.error('Error en getCategories:', error);
-    return sendError(res, 'INTERNAL_SERVER_ERROR', 'Error al obtener categorías', 500);
-  }
-};
 
 export const getNextSku = async (req: Request, res: Response) => {
   try {

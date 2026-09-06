@@ -4,7 +4,7 @@ import { requireAuth, requirePermission } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-router.post('/', requireAuth, requirePermission('inventory.create_product'), createPurchaseOrder);
-router.patch('/:id/status', requireAuth, requirePermission('inventory.create_product'), updatePurchaseOrderStatus);
+router.post('/', requireAuth, requirePermission('INVENTORY_CREATE_PRODUCT'), createPurchaseOrder);
+router.patch('/:id/status', requireAuth, requirePermission('INVENTORY_CREATE_PRODUCT'), updatePurchaseOrderStatus);
 
 export default router;

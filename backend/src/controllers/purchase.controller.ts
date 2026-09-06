@@ -77,20 +77,20 @@ export const updatePurchaseOrderStatus = async (req: Request, res: Response) => 
       // Ingresar inventario
       const updatedOrder = await prisma.$transaction(async (tx) => {
         for (const item of order.items) {
-          const branchStock = await tx.branchStock.upsert({
+          const inventory = await tx.inventory.upsert({
             where: { productId_branchId: { productId: item.productId, branchId: order.branchId } },
             update: { quantity: { increment: item.quantity } },
             create: { productId: item.productId, branchId: order.branchId, quantity: item.quantity }
           });
 
-          await tx.stockMovement.create({
+          await tx.inventoryMovement.create({
             data: {
               productId: item.productId,
               branchId: order.branchId,
               type: 'INGRESO',
               quantity: item.quantity,
-              previousStock: branchStock.quantity - item.quantity,
-              newStock: branchStock.quantity,
+              previousStock: inventory.quantity - item.quantity,
+              newStock: inventory.quantity,
               referenceId: order.id,
               createdById: userId
             }

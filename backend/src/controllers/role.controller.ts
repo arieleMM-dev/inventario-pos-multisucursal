@@ -71,7 +71,7 @@ export const updateRole = async (req: Request, res: Response) => {
 
     const role = await prisma.role.findUnique({ where: { id } });
     if (!role) return sendError(res, 'NOT_FOUND', 'Rol no encontrado', 404);
-    if (role.isSystem) return sendError(res, 'FORBIDDEN', 'No puedes modificar roles de sistema', 403);
+
 
     const { name, description, permissions } = result.data;
 

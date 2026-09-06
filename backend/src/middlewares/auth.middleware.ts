@@ -6,7 +6,7 @@ import { Role } from '@prisma/client';
 export interface JwtPayload {
   userId: string;
   role: string;
-  isSystem: boolean;
+  isSuperAdmin: boolean;
   permissions: string[];
   branchId: string | null;
 }
@@ -42,7 +42,7 @@ export function requirePermission(requiredPermission: string) {
       return sendError(res, 'UNAUTHORIZED', 'Usuario no autenticado', 401);
     }
 
-    if (req.user.isSystem) {
+    if (req.user.isSuperAdmin) {
       return next(); // System bypass
     }
 
@@ -59,8 +59,8 @@ export function requireBranchAccess(req: Request, res: Response, next: NextFunct
     return sendError(res, 'UNAUTHORIZED', 'Usuario no autenticado', 401);
   }
 
-  // System o usuarios con permiso global de sucursales tienen acceso a todas (BR-11)
-  if (req.user.isSystem || req.user.permissions.includes('branches.manage_all')) {
+  // Super Admin o usuarios con permiso global de sucursales tienen acceso a todas (BR-11)
+  if (req.user.isSuperAdmin || req.user.permissions.includes('BRANCHES_MANAGE')) {
     return next();
   }
 

@@ -3,28 +3,32 @@ import * as argon2 from 'argon2';
 
 const permissions = [
   // Inventario
-  { code: 'inventory.view', module: 'Inventario', description: 'Ver productos y stock' },
-  { code: 'inventory.create_product', module: 'Inventario', description: 'Crear o editar productos' },
-  { code: 'inventory.delete', module: 'Inventario', description: 'Eliminar productos' },
-  { code: 'inventory.adjust', module: 'Inventario', description: 'Realizar ajustes de stock' },
+  { code: 'INVENTORY_VIEW', module: 'Inventario', description: 'Ver productos y stock' },
+  { code: 'INVENTORY_READ_GLOBAL', module: 'Inventario', description: 'Ver stock global en sucursales' },
+  { code: 'INVENTORY_CREATE_PRODUCT', module: 'Inventario', description: 'Crear o editar productos' },
+  { code: 'INVENTORY_DELETE', module: 'Inventario', description: 'Eliminar productos' },
+  { code: 'INVENTORY_ADJUST', module: 'Inventario', description: 'Realizar ajustes de stock' },
   // Transferencias
-  { code: 'transfers.view', module: 'Transferencias', description: 'Ver transferencias' },
-  { code: 'transfers.create', module: 'Transferencias', description: 'Enviar transferencias' },
-  { code: 'transfers.receive', module: 'Transferencias', description: 'Recibir transferencias' },
+  { code: 'INVENTORY_TRANSFER', module: 'Transferencias', description: 'Acceso total a transferencias' },
+  { code: 'TRANSFERS_VIEW', module: 'Transferencias', description: 'Ver transferencias' },
+  { code: 'TRANSFERS_CREATE', module: 'Transferencias', description: 'Enviar transferencias' },
+  { code: 'TRANSFERS_RECEIVE', module: 'Transferencias', description: 'Recibir transferencias' },
   // Ventas (POS)
-  { code: 'pos.view', module: 'Ventas', description: 'Ver historial de ventas' },
-  { code: 'pos.sell', module: 'Ventas', description: 'Realizar ventas y cobrar' },
-  { code: 'customers.view', module: 'Ventas', description: 'Ver clientes' },
-  { code: 'customers.manage', module: 'Ventas', description: 'Crear o editar clientes' },
+  { code: 'POS_ACCESS', module: 'Ventas', description: 'Acceso a módulo POS' },
+  { code: 'POS_VIEW', module: 'Ventas', description: 'Ver historial de ventas' },
+  { code: 'POS_SELL', module: 'Ventas', description: 'Realizar ventas y cobrar' },
+  { code: 'CUSTOMERS_VIEW', module: 'Ventas', description: 'Ver clientes' },
+  { code: 'CUSTOMERS_MANAGE', module: 'Ventas', description: 'Crear o editar clientes' },
   // Reportes
-  { code: 'reports.view', module: 'Reportes', description: 'Ver analíticas y métricas' },
+  { code: 'REPORTS_VIEW', module: 'Reportes', description: 'Ver analíticas y métricas' },
   // Configuración
-  { code: 'users.view', module: 'Configuración', description: 'Ver usuarios' },
-  { code: 'users.manage', module: 'Configuración', description: 'Gestionar usuarios' },
-  { code: 'roles.view', module: 'Configuración', description: 'Ver roles' },
-  { code: 'roles.manage', module: 'Configuración', description: 'Gestionar roles y permisos' },
-  { code: 'branches.view', module: 'Configuración', description: 'Ver sucursales' },
-  { code: 'branches.manage', module: 'Configuración', description: 'Gestionar sucursales' },
+  { code: 'USER_EDIT_ALL', module: 'Configuración', description: 'Editar usuarios completamente' },
+  { code: 'USERS_VIEW', module: 'Configuración', description: 'Ver usuarios' },
+  { code: 'USERS_MANAGE', module: 'Configuración', description: 'Gestionar usuarios' },
+  { code: 'ROLES_VIEW', module: 'Configuración', description: 'Ver roles' },
+  { code: 'ROLES_MANAGE', module: 'Configuración', description: 'Gestionar roles y permisos' },
+  { code: 'BRANCHES_VIEW', module: 'Configuración', description: 'Ver sucursales' },
+  { code: 'BRANCHES_MANAGE', module: 'Configuración', description: 'Gestionar sucursales' },
 ];
 
 async function main() {
@@ -36,8 +40,11 @@ async function main() {
     update: {},
     create: {
       id: 'matriz-001',
+      code: 'SUC-001',
       name: 'Sucursal Matriz',
       address: 'Dirección Principal, Centro',
+      taxId: '123456789',
+      timezone: 'America/Mexico_City',
     },
   });
   console.log(`✅ Sucursal creada: ${sucursalMatriz.name}`);
@@ -97,7 +104,7 @@ async function main() {
   });
 
   // Cajero: Solo ventas e inventario (ver)
-  const cajeroPermissions = allPermissions.filter(p => ['pos.sell', 'inventory.view'].includes(p.code));
+  const cajeroPermissions = allPermissions.filter(p => ['POS_SELL', 'POS_ACCESS', 'INVENTORY_VIEW'].includes(p.code));
   await prisma.role.upsert({
     where: { name: 'CAJERO' },
     update: {},
@@ -115,10 +122,10 @@ async function main() {
   // 4. Crear Usuario Super Administrador
   const adminPassword = await argon2.hash('admin123');
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@empresa.com' },
+    where: { email: 'arieljsc2000@gmail.com' },
     update: { roleId: adminRole.id },
     create: {
-      email: 'admin@empresa.com',
+      email: 'arieljsc2000@gmail.com',
       passwordHash: adminPassword,
       firstName: 'Admin',
       lastName: 'System',

@@ -4,15 +4,20 @@ import { sendSuccess, sendError } from '../utils/response';
 import { z } from 'zod';
 
 const branchSchema = z.object({
+  code: z.string().min(1, "El código es requerido"),
   name: z.string().min(1, "El nombre de la sucursal es requerido"),
-  address: z.string().optional()
+  taxId: z.string().optional().nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  address: z.string().optional().nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  phone: z.string().optional().nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  email: z.string().email("Correo inválido").optional().nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  timezone: z.string().min(1, "La zona horaria es requerida").default("UTC")
 });
 
 export const getBranches = async (req: Request, res: Response) => {
   try {
     const branches = await prisma.branch.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, address: true }
+      select: { id: true, code: true, name: true, address: true, taxId: true, phone: true, email: true, timezone: true }
     });
     return sendSuccess(res, branches);
   } catch (error) {
